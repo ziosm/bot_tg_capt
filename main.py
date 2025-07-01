@@ -68,9 +68,10 @@ class CaptainCatBot:
              InlineKeyboardButton(self.t(user_id, 'btn_roadmap'), callback_data="roadmap")],
             [InlineKeyboardButton(self.t(user_id, 'btn_gamefi'), callback_data="game"),
              InlineKeyboardButton(self.t(user_id, 'btn_team'), callback_data="team")],
-            [InlineKeyboardButton(self.t(user_id, 'btn_community'), callback_data="community"),
-             InlineKeyboardButton(self.t(user_id, 'btn_help'), callback_data="help")],
-            [InlineKeyboardButton(self.t(user_id, 'btn_language'), callback_data="language")]
+            [InlineKeyboardButton("🌐 Website", url="https://www.captaincat.in/"),
+             InlineKeyboardButton(self.t(user_id, 'btn_community'), callback_data="community")],
+            [InlineKeyboardButton(self.t(user_id, 'btn_help'), callback_data="help"),
+             InlineKeyboardButton(self.t(user_id, 'btn_language'), callback_data="language")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -160,7 +161,8 @@ class CaptainCatBot:
         """
         
         keyboard = [
-            [InlineKeyboardButton("💎 Partecipa alla Prevendita", url="https://t.me/Captain_cat_Cain")]
+            [InlineKeyboardButton("💎 Partecipa alla Prevendita", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_n3rUpkEsWp")],
+            [InlineKeyboardButton("🌐 Website Ufficiale", url="https://www.captaincat.in/")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -285,16 +287,18 @@ Specialista in crescita community e marketing virale
 • Community Bonus: +10%
 
 📱 **Come Partecipare:**
-1. Unisciti al gruppo Telegram
-2. Contatta gli admin
-3. Invia TON
-4. Ricevi CAT tokens
+1. Clicca il link BLUM qui sotto
+2. Completa il processo
+3. Ricevi CAT tokens
+4. Preparati al listing!
 
 🚀 **Non perdere l'opportunità!**
         """
         
         keyboard = [
-            [InlineKeyboardButton("🚀 Unisciti alla Prevendita", url="https://t.me/Captain_cat_Cain")]
+            [InlineKeyboardButton("🚀 Partecipa via BLUM", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_n3rUpkEsWp")],
+            [InlineKeyboardButton("🌐 Website Ufficiale", url="https://www.captaincat.in/")],
+            [InlineKeyboardButton("💬 Supporto Telegram", url="https://t.me/Captain_cat_Cain")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -318,9 +322,9 @@ Specialista in crescita community e marketing virale
         """
         
         keyboard = [
+            [InlineKeyboardButton("🌐 Website Ufficiale", url="https://www.captaincat.in/")],
             [InlineKeyboardButton("💬 Telegram Main", url="https://t.me/Captain_cat_Cain")],
-            [InlineKeyboardButton("🌐 Website", url="https://captaincat.token")],
-            [InlineKeyboardButton("💎 Sponsor: BLUM", url="https://www.blum.io/")]
+            [InlineKeyboardButton("💎 Prevendita BLUM", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_n3rUpkEsWp")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
