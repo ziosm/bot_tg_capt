@@ -186,7 +186,7 @@ Gioca, raccogli CAT coin e scala la classifica!
         user = update.effective_user
         
         # URL della Web App (sostituisci con il tuo URL Render)
-        web_app_url = os.environ.get('WEBAPP_URL', 'https://your-captaincat-game.onrender.com')
+        web_app_url = os.environ.get('WEBAPP_URL', 'https://captaincat-game.onrender.com')
         
         keyboard = [[
             InlineKeyboardButton(
