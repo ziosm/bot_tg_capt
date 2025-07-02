@@ -69,9 +69,12 @@ def handle_errors(func):
             return await func(self, update, context)
         except BadRequest as e:
             logger.error(f"BadRequest in {func.__name__}: {e}")
-            if "Button_type_invalid" in str(e):
+            if "Button_type_invalid" in str(e) or "BUTTON_TYPE_INVALID" in str(e):
                 # Fallback per Web App non funzionante
                 await self._send_game_fallback(update, context)
+            elif "message is not modified" in str(e).lower():
+                # Ignora errori di messaggio non modificato
+                logger.warning("Message not modified - ignoring")
             return
         except (TimedOut, NetworkError) as e:
             logger.warning(f"Network error in {func.__name__}: {e}")
@@ -85,6 +88,25 @@ def handle_errors(func):
                     pass
             return
     return wrapper
+
+# Error handler globale per l'applicazione
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log l'errore e invia un messaggio all'utente se possibile."""
+    logger.error("Exception while handling an update:", exc_info=context.error)
+    
+    # Se l'errore è un conflitto, ignora (istanze multiple)
+    if "Conflict" in str(context.error):
+        logger.warning("Conflict error - possibly multiple instances running")
+        return
+    
+    # Se c'è un update, prova a rispondere all'utente
+    if isinstance(update, Update) and update.effective_message:
+        try:
+            await update.effective_message.reply_text(
+                "🔧 Si è verificato un errore temporaneo. Riprova tra poco!"
+            )
+        except Exception:
+            pass
 
 class GameDatabase:
     def __init__(self):
@@ -257,6 +279,9 @@ class CaptainCatBot:
         
         # Handler per dati Web App
         self.app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, self.handle_web_app_data))
+        
+        # Aggiungi error handler
+        self.app.add_error_handler(error_handler)
 
     async def _send_game_fallback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Fallback quando Web App non funziona"""
@@ -265,20 +290,19 @@ class CaptainCatBot:
         fallback_text = f"""
 🎮 **CaptainCat Adventure** 🦸‍♂️
 
-{user.first_name}, il gioco è temporaneamente in manutenzione nel gruppo.
-Puoi giocare senza problemi in chat privata!
+{user.first_name}, il gioco è temporaneamente in manutenzione.
 
 🎯 **Come giocare:**
-1. Clicca "Chat Privata" qui sotto
-2. Usa /game nel bot privato
+1. Clicca "Link Diretto" qui sotto
+2. Oppure usa la Chat Privata
 3. Divertiti e scala la classifica!
 
-🏆 I punteggi saranno comunque salvati per questo gruppo!
+🏆 I punteggi saranno salvati per questo gruppo!
         """
         
         keyboard = [
             [InlineKeyboardButton("🤖 Chat Privata", url=f"https://t.me/{context.bot.username}")],
-            [InlineKeyboardButton("🔗 Gioco Diretto", url=self._web_app_url)]
+            [InlineKeyboardButton("🔗 Link Diretto", url=self._web_app_url)]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -351,7 +375,7 @@ Gioca, raccogli CAT coin e scala la classifica!
 • Vincere tornei settimanali
 • Guadagnare CAT rewards!
 
-🎯 **Funziona meglio in chat privata per performance ottimali**
+🎯 **Link diretto per una migliore esperienza:**
             """
         else:
             game_text = f"""
@@ -379,21 +403,29 @@ Ciao {user.first_name}! Pronto per l'avventura crypto?
 🎯 **Tip:** Usa i controlli touch per mobile o le frecce per desktop!
             """
         
-        # Pulsanti diversi per gruppo vs privato
+        # Pulsanti diversi per gruppo vs privato - usando solo link normali per evitare Web App issues
         try:
             if is_group:
                 keyboard = [
-                    [InlineKeyboardButton("🎮 Gioca (Web App)", web_app=WebAppInfo(url=self._web_app_url))],
+                    [InlineKeyboardButton("🎮 Gioca Ora! 🦸‍♂️", url=self._web_app_url)],
                     [InlineKeyboardButton("🤖 Chat Privata", url=f"https://t.me/{context.bot.username}"),
-                     InlineKeyboardButton("🔗 Link Diretto", url=self._web_app_url)],
-                    [InlineKeyboardButton("🏆 Classifica Gruppo", callback_data="leaderboard")]
-                ]
-            else:
-                keyboard = [
-                    [InlineKeyboardButton("🎮 Gioca a CaptainCat Adventure! 🦸‍♂️", web_app=WebAppInfo(url=self._web_app_url))],
-                    [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
                      InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
                 ]
+            else:
+                # In chat privata, prova prima Web App poi fallback
+                try:
+                    keyboard = [
+                        [InlineKeyboardButton("🎮 Gioca a CaptainCat Adventure! 🦸‍♂️", web_app=WebAppInfo(url=self._web_app_url))],
+                        [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
+                         InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+                    ]
+                except Exception:
+                    # Fallback se Web App non supportato
+                    keyboard = [
+                        [InlineKeyboardButton("🎮 Gioca Ora! 🦸‍♂️", url=self._web_app_url)],
+                        [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
+                         InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+                    ]
             
             reply_markup = InlineKeyboardMarkup(keyboard)
             
@@ -404,7 +436,7 @@ Ciao {user.first_name}! Pronto per l'avventura crypto?
                 await update.message.reply_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
                 
         except BadRequest as e:
-            if "Button_type_invalid" in str(e):
+            if "Button_type_invalid" in str(e) or "BUTTON_TYPE_INVALID" in str(e):
                 logger.warning("Web App button failed, sending fallback")
                 await self._send_game_fallback(update, context)
             else:
@@ -671,7 +703,7 @@ Sii il primo eroe a:
                 logger.error(f"Errore handling web app data: {e}")
                 await update.message.reply_text("⚠️ Problema temporaneo nel salvare i dati. Il gioco funziona comunque!")
 
-    # Tutti gli altri metodi esistenti con gestione errori migliorata...
+    # Altri metodi esistenti rimangono identici ma con handle_errors...
     @handle_errors
     async def language_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -735,7 +767,7 @@ Sii il primo eroe a:
         elif query.data == "language":
             await self.language_command(update, context)
 
-    # Tutti gli altri metodi esistenti rimangono identici...
+    # Metodi esistenti per tutti gli altri comandi con handle_errors...
     @handle_errors
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -759,7 +791,6 @@ Sii il primo eroe a:
         """
         await update.message.reply_text(status_msg, parse_mode='Markdown')
 
-    # Metodi esistenti per tutti gli altri comandi...
     @handle_errors
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -783,7 +814,6 @@ Sii il primo eroe a:
         else:
             await update.message.reply_text(help_text, parse_mode='Markdown')
 
-    # Tutti gli altri metodi esistenti del bot rimangono identici...
     @handle_errors
     async def price_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -1086,23 +1116,29 @@ Sviluppatori specializzati in Web3 gaming
         await self.db.init_pool()
 
     def run(self):
-        print("🐱‍🦸 CaptainCat Bot with Optimized Group Support starting on Render...")
+        print("🐱‍🦸 CaptainCat Bot with Fixed Error Handling starting on Render...")
         
         # Inizializza database
         async def startup():
             await self.initialize_database()
             logger.info("Database initialized for game features")
         
-        # Esegui startup
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(startup())
+        # Esegui startup con gestione moderna di asyncio
+        try:
+            # Usa new_event_loop per evitare deprecation warning
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(startup())
+        except Exception as e:
+            logger.error(f"Startup error: {e}")
         
         # Configurazioni per stabilità
         self.app.run_polling(
             drop_pending_updates=True,
             allowed_updates=["message", "callback_query"],
             poll_interval=1.0,
-            timeout=10
+            timeout=10,
+            close_loop=False  # Evita problemi con multiple instances
         )
 
 # Script principale
@@ -1113,6 +1149,6 @@ if __name__ == "__main__":
         print("❌ ERRORE: Variabile BOT_TOKEN non trovata!")
         print("💡 Configura la variabile d'ambiente BOT_TOKEN su Render")
     else:
-        print(f"🚀 Starting CaptainCat Bot with Optimized Group Performance...")
+        print(f"🚀 Starting CaptainCat Bot with Fixed Error Handling...")
         bot = CaptainCatBot(BOT_TOKEN)
         bot.run()
