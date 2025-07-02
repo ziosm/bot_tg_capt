@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CaptainCat Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameCanvas {
+            border: 3px solid #FFD700;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            background: linear-gradient(to bottom, #87CEEB, #98FB98);
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #FFD700;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border: 3px solid #FFD700;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(135deg, #FF5252, #FF7043);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #FFD700;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            z-index: 20;
+            border: 3px solid #FFD700;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+            max-width: 90vw;
+        }
+
+        #gameOver h2 {
+            margin-bottom: 20px;
+            color: #FFD700;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #gameOver p {
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+
+        #gameOver button {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            border: 2px solid #FFD700;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        #gameOver button:hover {
+            background: linear-gradient(135deg, #FF5252, #FF7043);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .grade-display {
+            background: linear-gradient(135deg, #FFD700, #FFA000);
+            color: #1a1a2e;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FFD700;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-30px); }
+            60% { transform: translateY(-15px); }
+        }
+
+        .bounce {
+            animation: bounce 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div class="loading" id="loading">
+            <div class="bounce">🐱‍🦸</div>
+            <p>Caricamento CaptainCat Adventure...</p>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="400" style="display: none;"></canvas>
+        
+        <div id="ui" style="display: none;">
+            <div>🪙 CAT Coin: <span id="coins">0</span></div>
+            <div>🏆 Score: <span id="score">0</span></div>
+            <div>🎯 Level: <span id="level">1</span></div>
+            <div>❤️ Lives: <span id="lives">3</span></div>
+            <div>🔥 Combo: <span id="combo">x1</span></div>
+        </div>
+
+        <div id="controls" style="display: none;">
+            <button class="control-btn" id="leftBtn">←</button>
+            <button class="control-btn" id="jumpBtn">↑</button>
+            <button class="control-btn" id="rightBtn">→</button>
+        </div>
+
+        <div id="gameOver">
+            <h2>🏆 Game Over! 🏆</h2>
+            <div class="grade-display" id="playerGrade">🌱 ROOKIE TRADER</div>
+            <p><strong>Final Score:</strong> <span id="finalScore">0</span></p>
+            <p><strong>CAT Coin Collected:</strong> <span id="finalCoins">0</span></p>
+            <p><strong>Level Reached:</strong> <span id="finalLevel">1</span></p>
+            <p><strong>Bear Markets Defeated:</strong> <span id="finalEnemies">0</span></p>
+            <button onclick="restartGame()">🔄 Gioca Ancora</button>
+            <button onclick="submitScore()">📊 Salva Punteggio</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = {
+            score: 0,
+            coins: 0,
+            level: 1,
+            lives: 3,
+            combo: 1,
+            gameRunning: false,
+            startTime: Date.now(),
+            enemiesDefeated: 0,
+            lastCoinTime: 0,
+            comboTimer: 0
+        };
+
+        // Player object (CaptainCat)
+        const player = {
+            x: 50,
+            y: 300,
+            width: 40,
+            height: 40,
+            velocityX: 0,
+            velocityY: 0,
+            speed: 6,
+            jumpPower: 16,
+            onGround: false,
+            direction: 1,
+            animFrame: 0,
+            invulnerable: 0
+        };
+
+        // Game objects arrays
+        let platforms = [];
+        let coins = [];
+        let enemies = [];
+        let particles = [];
+        let powerUps = [];
+        let backgroundElements = [];
+
+        // Input handling
+        const keys = {};
+        let touchControls = {
+            left: false,
+            right: false,
+            jump: false
+        };
+
+        // Initialize game
+        function initGame() {
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('gameCanvas').style.display = 'block';
+                document.getElementById('ui').style.display = 'block';
+                document.getElementById('controls').style.display = 'flex';
+                
+                generateLevel();
+                setupEventListeners();
+                gameState.gameRunning = true;
+                gameLoop();
+            }, 2000);
+        }
+
+        function generateLevel() {
+            // Piattaforme base
+            platforms = [
+                {x: 0, y: 380, width: 200, height: 20, type: 'ground'},
+                {x: 250, y: 350, width: 150, height: 20, type: 'platform'},
+                {x: 450, y: 300, width: 120, height: 20, type: 'platform'},
+                {x: 620, y: 280, width: 180, height: 20, type: 'ground'},
+                
+                {x: 150, y: 250, width: 100, height: 20, type: 'platform'},
+                {x: 350, y: 200, width: 100, height: 20, type: 'platform'},
+                {x: 550, y: 150, width: 120, height: 20, type: 'platform'},
+                
+                {x: 200, y: 100, width: 80, height: 20, type: 'cloud'},
+                {x: 500, y: 50, width: 100, height: 20, type: 'cloud'}
+            ];
+
+            // CAT Coin strategicamente posizionate
+            coins = [
+                {x: 300, y: 320, collected: false, type: 'normal'},
+                {x: 500, y: 270, collected: false, type: 'normal'},
+                {x: 180, y: 220, collected: false, type: 'bonus'},
+                {x: 380, y: 170, collected: false, type: 'normal'},
+                {x: 580, y: 120, collected: false, type: 'bonus'},
+                {x: 230, y: 70, collected: false, type: 'mega'},
+                {x: 530, y: 20, collected: false, type: 'mega'}
+            ];
+
+            // Bear Market enemies
+            enemies = [
+                {x: 300, y: 330, width: 35, height: 35, direction: 1, speed: 2, type: 'bear', health: 1},
+                {x: 500, y: 280, width: 35, height: 35, direction: -1, speed: 1.5, type: 'bear', health: 1},
+                {x: 600, y: 260, width: 35, height: 35, direction: 1, speed: 2.5, type: 'bull', health: 2}
+            ];
+
+            // Power-ups
+            powerUps = [
+                {x: 400, y: 170, type: 'speed', collected: false, duration: 300},
+                {x: 650, y: 250, type: 'jump', collected: false, duration: 300}
+            ];
+
+            // Background elements
+            generateBackgroundElements();
+        }
+
+        function generateBackgroundElements() {
+            backgroundElements = [
+                {x: 100, y: 60, type: 'cloud', size: 30},
+                {x: 350, y: 80, type: 'cloud', size: 25},
+                {x: 600, y: 40, type: 'cloud', size: 35},
+                {x: 150, y: 120, type: 'star', size: 8},
+                {x: 450, y: 90, type: 'star', size: 6},
+                {x: 700, y: 110, type: 'star', size: 10}
+            ];
+        }
+
+        function setupEventListeners() {
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                if (e.code === 'Space') e.preventDefault();
+            });
+
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+
+            // Touch controls
+            const setupTouchButton = (btnId, control) => {
+                const btn = document.getElementById(btnId);
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchControls[control] = true;
+                    if (control === 'jump' && player.onGround) {
+                        player.velocityY = -player.jumpPower;
+                        player.onGround = false;
+                    }
+                });
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    touchControls[control] = false;
+                });
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    touchControls[control] = true;
+                    if (control === 'jump' && player.onGround) {
+                        player.velocityY = -player.jumpPower;
+                        player.onGround = false;
+                    }
+                });
+                btn.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    touchControls[control] = false;
+                });
+            };
+
+            setupTouchButton('leftBtn', 'left');
+            setupTouchButton('rightBtn', 'right');
+            setupTouchButton('jumpBtn', 'jump');
+        }
+
+        function update() {
+            if (!gameState.gameRunning) return;
+
+            handleInput();
+            updatePlayer();
+            updateEnemies();
+            updatePowerUps();
+            checkCollisions();
+            updateParticles();
+            updateCombo();
+            updateUI();
+            checkLevelProgress();
+        }
+
+        function handleInput() {
+            if (keys['ArrowLeft'] || keys['KeyA'] || touchControls.left) {
+                player.velocityX = -player.speed;
+                player.direction = -1;
+            } else if (keys['ArrowRight'] || keys['KeyD'] || touchControls.right) {
+                player.velocityX = player.speed;
+                player.direction = 1;
+            } else {
+                player.velocityX *= 0.8;
+            }
+
+            if ((keys['ArrowUp'] || keys['KeyW'] || keys['Space']) && player.onGround) {
+                player.velocityY = -player.jumpPower;
+                player.onGround = false;
+            }
+        }
+
+        function updatePlayer() {
+            // Apply gravity
+            player.velocityY += 0.8;
+            
+            // Apply velocity
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+            
+            // Animation
+            player.animFrame += 0.2;
+            if (player.invulnerable > 0) player.invulnerable--;
+            
+            // Boundary constraints
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            
+            player.onGround = false;
+            
+            // Platform collision
+            platforms.forEach(platform => {
+                if (player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+                    
+                    if (player.velocityY > 0 && player.y < platform.y) {
+                        player.y = platform.y - player.height;
+                        player.velocityY = 0;
+                        player.onGround = true;
+                    }
+                }
+            });
+            
+            if (player.y > canvas.height) {
+                loseLife();
+            }
+        }
+
+        function updateEnemies() {
+            enemies.forEach((enemy, index) => {
+                enemy.x += enemy.direction * enemy.speed;
+                
+                // Reverse direction at platform edges
+                if (enemy.x <= 0 || enemy.x + enemy.width >= canvas.width) {
+                    enemy.direction *= -1;
+                }
+                
+                // Platform bounds checking
+                let onPlatform = false;
+                platforms.forEach(platform => {
+                    if (enemy.x + enemy.width > platform.x && 
+                        enemy.x < platform.x + platform.width &&
+                        enemy.y + enemy.height >= platform.y - 5 &&
+                        enemy.y + enemy.height <= platform.y + 25) {
+                        onPlatform = true;
+                    }
+                });
+                
+                if (!onPlatform && Math.abs(enemy.velocityX) < 1) {
+                    enemy.direction *= -1;
+                }
+            });
+        }
+
+        function updatePowerUps() {
+            powerUps.forEach(powerUp => {
+                if (powerUp.collected && powerUp.duration > 0) {
+                    powerUp.duration--;
+                    if (powerUp.duration === 0) {
+                        // Reset power-up effects
+                        if (powerUp.type === 'speed') player.speed = 6;
+                        if (powerUp.type === 'jump') player.jumpPower = 16;
+                    }
+                }
+            });
+        }
+
+        function checkCollisions() {
+            // Coin collection
+            coins.forEach(coin => {
+                if (!coin.collected &&
+                    player.x < coin.x + 20 &&
+                    player.x + player.width > coin.x &&
+                    player.y < coin.y + 20 &&
+                    player.y + player.height > coin.y) {
+                    
+                    coin.collected = true;
+                    
+                    // Check for combo
+                    const now = Date.now();
+                    if (now - gameState.lastCoinTime < 2000) {
+                        gameState.combo = Math.min(gameState.combo + 1, 10);
+                        gameState.comboTimer = 120; // 2 seconds at 60fps
+                    } else {
+                        gameState.combo = 1;
+                    }
+                    gameState.lastCoinTime = now;
+                    
+                    // Score based on coin type and combo
+                    let baseScore = 100;
+                    if (coin.type === 'bonus') baseScore = 200;
+                    if (coin.type === 'mega') baseScore = 500;
+                    
+                    const comboScore = baseScore * gameState.combo;
+                    gameState.coins++;
+                    gameState.score += comboScore;
+                    
+                    createParticles(coin.x, coin.y, coin.type === 'mega' ? '#FF6B6B' : '#FFD700', coin.type);
+                }
+            });
+
+            // Power-up collection
+            powerUps.forEach(powerUp => {
+                if (!powerUp.collected &&
+                    player.x < powerUp.x + 25 &&
+                    player.x + player.width > powerUp.x &&
+                    player.y < powerUp.y + 25 &&
+                    player.y + player.height > powerUp.y) {
+                    
+                    powerUp.collected = true;
+                    
+                    if (powerUp.type === 'speed') {
+                        player.speed = 9;
+                        powerUp.duration = 300;
+                    } else if (powerUp.type === 'jump') {
+                        player.jumpPower = 22;
+                        powerUp.duration = 300;
+                    }
+                    
+                    createParticles(powerUp.x, powerUp.y, '#00FF00', 'powerup');
+                }
+            });
+
+            // Enemy collision
+            enemies.forEach((enemy, index) => {
+                if (player.invulnerable > 0) return;
+                
+                if (player.x < enemy.x + enemy.width &&
+                    player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.height > enemy.y) {
+                    
+                    // Check if player is jumping on enemy
+                    if (player.velocityY > 0 && player.y < enemy.y) {
+                        // Defeat enemy
+                        enemy.health--;
+                        if (enemy.health <= 0) {
+                            enemies.splice(index, 1);
+                            gameState.score += 200 * gameState.combo;
+                            gameState.enemiesDefeated++;
+                            player.velocityY = -12; // Bounce
+                            createParticles(enemy.x, enemy.y, '#FF6B6B', 'enemy');
+                        } else {
+                            // Just damage enemy
+                            player.velocityY = -8;
+                            createParticles(enemy.x, enemy.y, '#FFA500', 'damage');
+                        }
+                    } else {
+                        // Player takes damage
+                        loseLife();
+                    }
+                }
+            });
+        }
+
+        function updateParticles() {
+            particles = particles.filter(particle => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life--;
+                particle.vy += 0.1; // gravity
+                return particle.life > 0;
+            });
+        }
+
+        function updateCombo() {
+            if (gameState.comboTimer > 0) {
+                gameState.comboTimer--;
+            } else if (gameState.combo > 1) {
+                gameState.combo = 1;
+            }
+        }
+
+        function createParticles(x, y, color, type) {
+            const count = type === 'mega' ? 15 : type === 'powerup' ? 12 : 8;
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x + 10,
+                    y: y + 10,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8 - 2,
+                    color: color,
+                    life: type === 'mega' ? 60 : 40,
+                    size: type === 'mega' ? 4 : 3
+                });
+            }
+        }
+
+        function loseLife() {
+            if (player.invulnerable > 0) return;
+            
+            gameState.lives--;
+            player.invulnerable = 120; // 2 seconds of invulnerability
+            gameState.combo = 1; // Reset combo
+            
+            if (gameState.lives <= 0) {
+                gameOver();
+            } else {
+                // Reset player position
+                player.x = 50;
+                player.y = 300;
+                player.velocityX = 0;
+                player.velocityY = 0;
+                createParticles(player.x, player.y, '#FF0000', 'damage');
+            }
+        }
+
+        function checkLevelProgress() {
+            const coinsCollected = coins.filter(coin => coin.collected).length;
+            const enemiesLeft = enemies.length;
+            
+            if (coinsCollected >= coins.length && enemiesLeft === 0) {
+                nextLevel();
+            }
+        }
+
+        function nextLevel() {
+            gameState.level++;
+            gameState.score += 1000; // Level completion bonus
+            
+            // Generate new, harder level
+            generateLevel();
+            
+            // Add more enemies and coins for higher levels
+            if (gameState.level > 1) {
+                // Add extra enemies
+                for (let i = 0; i < gameState.level - 1; i++) {
+                    enemies.push({
+                        x: 200 + Math.random() * 400,
+                        y: 350,
+                        width: 35,
+                        height: 35,
+                        direction: Math.random() > 0.5 ? 1 : -1,
+                        speed: 1.5 + Math.random() * 2,
+                        type: Math.random() > 0.7 ? 'bull' : 'bear',
+                        health: Math.random() > 0.8 ? 2 : 1
+                    });
+                }
+                
+                // Add bonus coins
+                for (let i = 0; i < Math.floor(gameState.level / 2); i++) {
+                    coins.push({
+                        x: 100 + Math.random() * 600,
+                        y: 50 + Math.random() * 200,
+                        collected: false,
+                        type: Math.random() > 0.8 ? 'mega' : 'bonus'
+                    });
+                }
+            }
+            
+            // Reset player position
+            player.x = 50;
+            player.y = 300;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            
+            // Show level up effect
+            createParticles(player.x, player.y, '#FFD700', 'mega');
+        }
+
+        function gameOver() {
+            gameState.gameRunning = false;
+            
+            // Calculate grade
+            const score = gameState.score;
+            let grade, gradeEmoji;
+            
+            if (score >= 50000) {
+                grade = "👑 CRYPTO LEGEND";
+                gradeEmoji = "👑";
+            } else if (score >= 25000) {
+                grade = "💎 DIAMOND HANDS";
+                gradeEmoji = "💎";
+            } else if (score >= 10000) {
+                grade = "🚀 MOON WALKER";
+                gradeEmoji = "🚀";
+            } else if (score >= 5000) {
+                grade = "⚡ BULL RUNNER";
+                gradeEmoji = "⚡";
+            } else if (score >= 1000) {
+                grade = "🐱 CAT HERO";
+                gradeEmoji = "🐱";
+            } else {
+                grade = "🌱 ROOKIE TRADER";
+                gradeEmoji = "🌱";
+            }
+            
+            document.getElementById('playerGrade').textContent = grade;
+            document.getElementById('finalScore').textContent = gameState.score.toLocaleString();
+            document.getElementById('finalCoins').textContent = gameState.coins;
+            document.getElementById('finalLevel').textContent = gameState.level;
+            document.getElementById('finalEnemies').textContent = gameState.enemiesDefeated;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        function updateUI() {
+            document.getElementById('coins').textContent = gameState.coins;
+            document.getElementById('score').textContent = gameState.score.toLocaleString();
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('lives').textContent = gameState.lives;
+            document.getElementById('combo').textContent = `x${gameState.combo}`;
+        }
+
+        function render() {
+            // Clear canvas with gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.7, '#98FB98');
+            gradient.addColorStop(1, '#90EE90');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background elements
+            drawBackgroundElements();
+            
+            // Draw platforms
+            drawPlatforms();
+            
+            // Draw coins
+            drawCoins();
+            
+            // Draw power-ups
+            drawPowerUps();
+            
+            // Draw enemies
+            drawEnemies();
+            
+            // Draw player
+            drawPlayer();
+            
+            // Draw particles
+            drawParticles();
+            
+            // Draw combo indicator
+            if (gameState.combo > 1) {
+                drawComboIndicator();
+            }
+        }
+
+        function drawBackgroundElements() {
+            backgroundElements.forEach(element => {
+                if (element.type === 'cloud') {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(element.x, element.y, element.size, 0, Math.PI * 2);
+                    ctx.arc(element.x + element.size, element.y, element.size * 1.2, 0, Math.PI * 2);
+                    ctx.arc(element.x + element.size * 2, element.y, element.size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (element.type === 'star') {
+                    ctx.fillStyle = '#FFD700';
+                    drawStar(element.x, element.y, element.size);
+                }
+            });
+        }
+
+        function drawStar(x, y, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * size, 
+                          Math.sin((18 + i * 72) * Math.PI / 180) * size);
+                ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * size * 0.5, 
+                          Math.sin((54 + i * 72) * Math.PI / 180) * size * 0.5);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPlatforms() {
+            platforms.forEach(platform => {
+                if (platform.type === 'cloud') {
+                    // Cloud platform
+                    ctx.fillStyle = '#E6E6FA';
+                    ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                    ctx.fillStyle = '#DDA0DD';
+                    ctx.fillRect(platform.x, platform.y + platform.height - 5, platform.width, 5);
+                } else {
+                    // Regular platform
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                    // Platform highlight
+                    ctx.fillStyle = '#A0522D';
+                    ctx.fillRect(platform.x, platform.y, platform.width, 5);
+                }
+            });
+        }
+
+        function drawCoins() {
+            coins.forEach(coin => {
+                if (!coin.collected) {
+                    const time = Date.now() * 0.005;
+                    const bounce = Math.sin(time + coin.x * 0.01) * 3;
+                    
+                    if (coin.type === 'mega') {
+                        // Mega coin - larger and more flashy
+                        ctx.fillStyle = '#FF6B6B';
+                        ctx.beginPath();
+                        ctx.arc(coin.x + 12, coin.y + 12 + bounce, 12, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#FFD700';
+                        ctx.beginPath();
+                        ctx.arc(coin.x + 12, coin.y + 12 + bounce, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#FFF';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('C', coin.x + 12, coin.y + 18 + bounce);
+                    } else if (coin.type === 'bonus') {
+                        // Bonus coin - silver
+                        ctx.fillStyle = '#C0C0C0';
+                        ctx.beginPath();
+                        ctx.arc(coin.x + 10, coin.y + 10 + bounce, 10, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#FFD700';
+                        ctx.beginPath();
+                        ctx.arc(coin.x + 10, coin.y + 10 + bounce, 6, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 12px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('C', coin.x + 10, coin.y + 15 + bounce);
+                    } else {
+                        // Normal coin
+                        ctx.fillStyle = '#FFD700';
+                        ctx.beginPath();
+                        ctx.arc(coin.x + 10, coin.y + 10 + bounce, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#FFF';
+                        ctx.beginPath();
+                        ctx.arc(coin.x + 6, coin.y + 6 + bounce, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 10px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('C', coin.x + 10, coin.y + 15 + bounce);
+                    }
+                }
+            });
+        }
+
+        function drawPowerUps() {
+            powerUps.forEach(powerUp => {
+                if (!powerUp.collected) {
+                    const time = Date.now() * 0.008;
+                    const rotation = time;
+                    
+                    ctx.save();
+                    ctx.translate(powerUp.x + 12, powerUp.y + 12);
+                    ctx.rotate(rotation);
+                    
+                    if (powerUp.type === 'speed') {
+                        ctx.fillStyle = '#00FF00';
+                        ctx.fillRect(-12, -12, 24, 24);
+                        ctx.fillStyle = '#FFF';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('S', 0, 6);
+                    } else if (powerUp.type === 'jump') {
+                        ctx.fillStyle = '#0080FF';
+                        ctx.fillRect(-12, -12, 24, 24);
+                        ctx.fillStyle = '#FFF';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('J', 0, 6);
+                    }
+                    
+                    ctx.restore();
+                }
+            });
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                if (enemy.type === 'bull') {
+                    // Bull Market (green)
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    
+                    // Bull horns
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(enemy.x + 5, enemy.y - 5, 5, 8);
+                    ctx.fillRect(enemy.x + 25, enemy.y - 5, 5, 8);
+                    
+                    // Eyes
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(enemy.x + 8, enemy.y + 8, 4, 4);
+                    ctx.fillRect(enemy.x + 23, enemy.y + 8, 4, 4);
+                    
+                    // Health indicator
+                    if (enemy.health > 1) {
+                        ctx.fillStyle = '#FFD700';
+                        ctx.fillRect(enemy.x, enemy.y - 8, enemy.width * (enemy.health / 2), 3);
+                    }
+                } else {
+                    // Bear Market (red)
+                    ctx.fillStyle = '#8B0000';
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    
+                    // Bear ears
+                    ctx.fillStyle = '#654321';
+                    ctx.beginPath();
+                    ctx.arc(enemy.x + 8, enemy.y + 5, 6, 0, Math.PI * 2);
+                    ctx.arc(enemy.x + 27, enemy.y + 5, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Eyes
+                    ctx.fillStyle = '#FF0000';
+                    ctx.fillRect(enemy.x + 5, enemy.y + 5, 5, 5);
+                    ctx.fillRect(enemy.x + 25, enemy.y + 5, 5, 5);
+                }
+            });
+        }
+
+        function drawPlayer() {
+            const isInvulnerable = player.invulnerable > 0;
+            const shouldDraw = !isInvulnerable || Math.floor(player.invulnerable / 5) % 2;
+            
+            if (!shouldDraw) return;
+            
+            ctx.save();
+            
+            if (player.direction === -1) {
+                ctx.scale(-1, 1);
+                ctx.translate(-player.x - player.width, 0);
+            } else {
+                ctx.translate(player.x, 0);
+            }
+            
+            // CaptainCat body
+            ctx.fillStyle = '#4FC3F7';
+            ctx.fillRect(0, player.y, player.width, player.height);
+            
+            // Captain America style design
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(5, player.y + 8, player.width - 10, 6);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(5, player.y + 16, player.width - 10, 4);
+            ctx.fillRect(5, player.y + 24, player.width - 10, 4);
+            
+            // Blue square with star
+            ctx.fillStyle = '#0000FF';
+            ctx.fillRect(5, player.y + 5, 15, 15);
+            ctx.fillStyle = '#FFFFFF';
+            drawStar(12, player.y + 12, 4);
+            
+            // Cat ears with animation
+            const earBounce = Math.sin(player.animFrame) * 2;
+            ctx.fillStyle = '#4FC3F7';
+            ctx.fillRect(8, player.y - 8 + earBounce, 8, 10);
+            ctx.fillRect(24, player.y - 8 + earBounce, 8, 10);
+            
+            // Cat tail with swing animation
+            const tailSwing = Math.sin(player.animFrame * 2) * 10;
+            ctx.fillStyle = '#4FC3F7';
+            ctx.save();
+            ctx.translate(player.width, player.y + 15);
+            ctx.rotate(tailSwing * Math.PI / 180);
+            ctx.fillRect(0, 0, 15, 6);
+            ctx.restore();
+            
+            // Cape effect when moving fast
+            if (Math.abs(player.velocityX) > 3) {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillRect(-5 - i * 3, player.y + 5 + i * 2, 8, 25 - i * 5);
+                }
+            }
+            
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            particles.forEach(particle => {
+                ctx.globalAlpha = particle.life / 40;
+                ctx.fillStyle = particle.color;
+                ctx.fillRect(particle.x, particle.y, particle.size || 3, particle.size || 3);
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        function drawComboIndicator() {
+            const comboAlpha = Math.min(gameState.comboTimer / 60, 1);
+            ctx.globalAlpha = comboAlpha;
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`COMBO x${gameState.combo}!`, canvas.width / 2, 50);
+            
+            ctx.globalAlpha = 1;
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function restartGame() {
+            // Reset all game state
+            gameState = {
+                score: 0,
+                coins: 0,
+                level: 1,
+                lives: 3,
+                combo: 1,
+                gameRunning: true,
+                startTime: Date.now(),
+                enemiesDefeated: 0,
+                lastCoinTime: 0,
+                comboTimer: 0
+            };
+            
+            // Reset player
+            player.x = 50;
+            player.y = 300;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            player.onGround = false;
+            player.direction = 1;
+            player.animFrame = 0;
+            player.invulnerable = 0;
+            player.speed = 6;
+            player.jumpPower = 16;
+            
+            // Reset arrays
+            particles = [];
+            
+            // Generate new level
+            generateLevel();
+            
+            // Hide game over screen
+            document.getElementById('gameOver').style.display = 'none';
+        }
+
+        function submitScore() {
+            const playTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            
+            const gameResults = {
+                score: gameState.score,
+                level: gameState.level,
+                coins: gameState.coins,
+                enemies: gameState.enemiesDefeated,
+                playTime: playTime
+            };
+            
+            // Send data to Telegram Web App
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(JSON.stringify(gameResults));
+                window.Telegram.WebApp.close();
+            } else {
+                // Fallback for testing
+                alert(`🏆 Punteggio salvato!\n\n📊 Statistiche:\n• Punti: ${gameState.score.toLocaleString()}\n• CAT Coin: ${gameState.coins}\n• Livello: ${gameState.level}\n• Bear Market sconfitti: ${gameState.enemiesDefeated}\n• Tempo di gioco: ${Math.floor(playTime/60)}:${(playTime%60).toString().padStart(2,'0')}`);
+            }
+        }
+
+        // Initialize Telegram Web App
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+            // Set theme colors
+            window.Telegram.WebApp.setHeaderColor('#1a1a2e');
+            window.Telegram.WebApp.setBackgroundColor('#16213e');
+        }
+
+        // Start the game
+        initGame();
