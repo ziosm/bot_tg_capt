@@ -4,10 +4,13 @@ import logging
 import aiohttp
 import json
 import asyncpg
+import time
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from telegram.error import BadRequest, TimedOut, NetworkError
 import random
+from functools import wraps
 from translations import get_text, get_available_languages, get_language_flag, TRANSLATIONS
 
 # Configurazione logging
@@ -20,87 +23,193 @@ logger = logging.getLogger(__name__)
 # Database connection per il gioco
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# Rate limiting decorator
+def rate_limit(max_calls=5, period=60, group_max_calls=10, group_period=30):
+    def decorator(func):
+        calls = {}
+        group_calls = {}
+        
+        @wraps(func)
+        async def wrapper(self, update, context):
+            user_id = update.effective_user.id
+            chat_id = update.effective_chat.id
+            is_group = chat_id < 0
+            now = time.time()
+            
+            # Rate limiting per utente
+            if user_id in calls:
+                calls[user_id] = [call for call in calls[user_id] if call > now - period]
+                if len(calls[user_id]) >= max_calls:
+                    if not is_group:  # Solo in privato mostra il messaggio di rate limit
+                        await update.message.reply_text("⏱️ Troppo veloce! Riprova tra un minuto.")
+                    return
+            else:
+                calls[user_id] = []
+            
+            # Rate limiting per gruppo
+            if is_group:
+                if chat_id in group_calls:
+                    group_calls[chat_id] = [call for call in group_calls[chat_id] if call > now - group_period]
+                    if len(group_calls[chat_id]) >= group_max_calls:
+                        return  # Silenzioso nei gruppi
+                else:
+                    group_calls[chat_id] = []
+                group_calls[chat_id].append(now)
+            
+            calls[user_id].append(now)
+            return await func(self, update, context)
+        return wrapper
+    return decorator
+
+# Error handling decorator
+def handle_errors(func):
+    @wraps(func)
+    async def wrapper(self, update, context):
+        try:
+            return await func(self, update, context)
+        except BadRequest as e:
+            logger.error(f"BadRequest in {func.__name__}: {e}")
+            if "Button_type_invalid" in str(e):
+                # Fallback per Web App non funzionante
+                await self._send_game_fallback(update, context)
+            return
+        except (TimedOut, NetworkError) as e:
+            logger.warning(f"Network error in {func.__name__}: {e}")
+            return
+        except Exception as e:
+            logger.error(f"Unexpected error in {func.__name__}: {e}")
+            if update.message:
+                try:
+                    await update.message.reply_text("🔧 Problema temporaneo. Riprova tra poco!")
+                except:
+                    pass
+            return
+    return wrapper
+
 class GameDatabase:
     def __init__(self):
         self.pool = None
+        self._connection_attempts = 0
+        self._max_attempts = 3
     
     async def init_pool(self):
-        if DATABASE_URL:
-            self.pool = await asyncpg.create_pool(DATABASE_URL)
-            await self.create_tables()
+        if DATABASE_URL and self._connection_attempts < self._max_attempts:
+            try:
+                self.pool = await asyncpg.create_pool(
+                    DATABASE_URL,
+                    min_size=1,
+                    max_size=10,
+                    command_timeout=60,
+                    server_settings={'jit': 'off'}
+                )
+                await self.create_tables()
+                logger.info("Database pool created successfully")
+            except Exception as e:
+                self._connection_attempts += 1
+                logger.error(f"Database connection failed (attempt {self._connection_attempts}): {e}")
+                if self._connection_attempts >= self._max_attempts:
+                    logger.error("Max database connection attempts reached. Running without database.")
     
     async def create_tables(self):
         if not self.pool:
             return
-        async with self.pool.acquire() as conn:
-            await conn.execute('''
-                CREATE TABLE IF NOT EXISTS captaincat_scores (
-                    id SERIAL PRIMARY KEY,
-                    user_id BIGINT NOT NULL,
-                    username TEXT,
-                    first_name TEXT,
-                    score INTEGER NOT NULL,
-                    level INTEGER DEFAULT 1,
-                    coins_collected INTEGER DEFAULT 0,
-                    enemies_defeated INTEGER DEFAULT 0,
-                    play_time INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    group_id BIGINT
-                );
-                
-                CREATE INDEX IF NOT EXISTS idx_user_scores ON captaincat_scores(user_id);
-                CREATE INDEX IF NOT EXISTS idx_group_scores ON captaincat_scores(group_id);
-            ''')
+        try:
+            async with self.pool.acquire() as conn:
+                await conn.execute('''
+                    CREATE TABLE IF NOT EXISTS captaincat_scores (
+                        id SERIAL PRIMARY KEY,
+                        user_id BIGINT NOT NULL,
+                        username TEXT,
+                        first_name TEXT,
+                        score INTEGER NOT NULL,
+                        level INTEGER DEFAULT 1,
+                        coins_collected INTEGER DEFAULT 0,
+                        enemies_defeated INTEGER DEFAULT 0,
+                        play_time INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        group_id BIGINT
+                    );
+                    
+                    CREATE INDEX IF NOT EXISTS idx_user_scores ON captaincat_scores(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_group_scores ON captaincat_scores(group_id);
+                    CREATE INDEX IF NOT EXISTS idx_score_ranking ON captaincat_scores(score DESC, created_at DESC);
+                ''')
+        except Exception as e:
+            logger.error(f"Error creating tables: {e}")
     
     async def save_score(self, user_id, username, first_name, score, level, 
                         coins, enemies, play_time, group_id=None):
         if not self.pool:
-            return
-        async with self.pool.acquire() as conn:
-            await conn.execute('''
-                INSERT INTO captaincat_scores 
-                (user_id, username, first_name, score, level, coins_collected, 
-                 enemies_defeated, play_time, group_id)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            ''', user_id, username, first_name, score, level, coins, enemies, play_time, group_id)
+            logger.warning("Database not available, score not saved")
+            return False
+        try:
+            async with self.pool.acquire() as conn:
+                await conn.execute('''
+                    INSERT INTO captaincat_scores 
+                    (user_id, username, first_name, score, level, coins_collected, 
+                     enemies_defeated, play_time, group_id)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                ''', user_id, username, first_name, score, level, coins, enemies, play_time, group_id)
+                return True
+        except Exception as e:
+            logger.error(f"Error saving score: {e}")
+            return False
     
     async def get_user_best_score(self, user_id):
         if not self.pool:
             return None
-        async with self.pool.acquire() as conn:
-            result = await conn.fetchrow('''
-                SELECT MAX(score) as best_score, MAX(level) as max_level,
-                       SUM(coins_collected) as total_coins, SUM(enemies_defeated) as total_enemies,
-                       COUNT(*) as games_played
-                FROM captaincat_scores WHERE user_id = $1
-            ''', user_id)
-            return result
+        try:
+            async with self.pool.acquire() as conn:
+                result = await conn.fetchrow('''
+                    SELECT MAX(score) as best_score, MAX(level) as max_level,
+                           SUM(coins_collected) as total_coins, SUM(enemies_defeated) as total_enemies,
+                           COUNT(*) as games_played
+                    FROM captaincat_scores WHERE user_id = $1
+                ''', user_id)
+                return result
+        except Exception as e:
+            logger.error(f"Error getting user stats: {e}")
+            return None
     
     async def get_group_leaderboard(self, group_id=None, limit=10):
         if not self.pool:
             return []
-        async with self.pool.acquire() as conn:
-            if group_id:
-                query = '''
-                    SELECT DISTINCT ON (user_id) user_id, username, first_name, 
-                           score, level, created_at
-                    FROM captaincat_scores 
-                    WHERE group_id = $1
-                    ORDER BY user_id, score DESC, created_at DESC
-                    LIMIT $2
-                '''
-                results = await conn.fetch(query, group_id, limit)
-            else:
-                query = '''
-                    SELECT DISTINCT ON (user_id) user_id, username, first_name, 
-                           score, level, created_at
-                    FROM captaincat_scores 
-                    ORDER BY user_id, score DESC, created_at DESC
-                    LIMIT $1
-                '''
-                results = await conn.fetch(query, limit)
-            
-            return sorted(results, key=lambda x: x['score'], reverse=True)[:limit]
+        try:
+            async with self.pool.acquire() as conn:
+                if group_id:
+                    query = '''
+                        WITH ranked_scores AS (
+                            SELECT user_id, username, first_name, score, level, created_at,
+                                   ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY score DESC, created_at DESC) as rn
+                            FROM captaincat_scores 
+                            WHERE group_id = $1
+                        )
+                        SELECT user_id, username, first_name, score, level, created_at
+                        FROM ranked_scores 
+                        WHERE rn = 1
+                        ORDER BY score DESC, created_at ASC
+                        LIMIT $2
+                    '''
+                    results = await conn.fetch(query, group_id, limit)
+                else:
+                    query = '''
+                        WITH ranked_scores AS (
+                            SELECT user_id, username, first_name, score, level, created_at,
+                                   ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY score DESC, created_at DESC) as rn
+                            FROM captaincat_scores
+                        )
+                        SELECT user_id, username, first_name, score, level, created_at
+                        FROM ranked_scores 
+                        WHERE rn = 1
+                        ORDER BY score DESC, created_at ASC
+                        LIMIT $1
+                    '''
+                    results = await conn.fetch(query, limit)
+                
+                return list(results)
+        except Exception as e:
+            logger.error(f"Error getting leaderboard: {e}")
+            return []
 
 class CaptainCatBot:
     def __init__(self, token: str):
@@ -108,6 +217,7 @@ class CaptainCatBot:
         self.app = Application.builder().token(token).build()
         self.user_languages = {}
         self.db = GameDatabase()
+        self._web_app_url = os.environ.get('WEBAPP_URL', 'https://captaincat-game.onrender.com')
         self.setup_handlers()
 
     def get_user_language(self, user_id: int) -> str:
@@ -135,7 +245,7 @@ class CaptainCatBot:
         self.app.add_handler(CommandHandler("nft", self.nft_command))
         self.app.add_handler(CommandHandler("status", self.status_command))
         
-        # Nuovi handler per il gioco
+        # Nuovi handler per il gioco con rate limiting
         self.app.add_handler(CommandHandler("game", self.game_command))
         self.app.add_handler(CommandHandler("play", self.game_command))
         self.app.add_handler(CommandHandler("mystats", self.mystats_command))
@@ -148,6 +258,39 @@ class CaptainCatBot:
         # Handler per dati Web App
         self.app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, self.handle_web_app_data))
 
+    async def _send_game_fallback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Fallback quando Web App non funziona"""
+        user = update.effective_user
+        
+        fallback_text = f"""
+🎮 **CaptainCat Adventure** 🦸‍♂️
+
+{user.first_name}, il gioco è temporaneamente in manutenzione nel gruppo.
+Puoi giocare senza problemi in chat privata!
+
+🎯 **Come giocare:**
+1. Clicca "Chat Privata" qui sotto
+2. Usa /game nel bot privato
+3. Divertiti e scala la classifica!
+
+🏆 I punteggi saranno comunque salvati per questo gruppo!
+        """
+        
+        keyboard = [
+            [InlineKeyboardButton("🤖 Chat Privata", url=f"https://t.me/{context.bot.username}")],
+            [InlineKeyboardButton("🔗 Gioco Diretto", url=self._web_app_url)]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            if update.callback_query:
+                await update.callback_query.edit_message_text(fallback_text, reply_markup=reply_markup, parse_mode='Markdown')
+            else:
+                await update.message.reply_text(fallback_text, reply_markup=reply_markup, parse_mode='Markdown')
+        except Exception as e:
+            logger.error(f"Error sending fallback: {e}")
+
+    @handle_errors
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -180,27 +323,39 @@ Gioca, raccogli CAT coin e scala la classifica!
         
         await update.message.reply_text(welcome_msg, reply_markup=reply_markup, parse_mode='Markdown')
 
+    @rate_limit(max_calls=3, period=60, group_max_calls=15, group_period=60)
+    @handle_errors
     async def game_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Comando principale per il gioco"""
+        """Comando principale per il gioco ottimizzato per gruppi"""
         user_id = update.effective_user.id
         user = update.effective_user
+        chat_id = update.effective_chat.id
+        is_group = chat_id < 0
         
-        # URL della Web App (sostituisci con il tuo URL Render)
-        web_app_url = os.environ.get('WEBAPP_URL', 'https://captaincat-game.onrender.com')
+        logger.info(f"Game command from user {user_id} in {'group' if is_group else 'private'} {chat_id}")
         
-        keyboard = [[
-            InlineKeyboardButton(
-                "🎮 Gioca a CaptainCat Adventure! 🦸‍♂️", 
-                web_app=WebAppInfo(url=web_app_url)
-            )
-        ], [
-            InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
-            InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")
-        ]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        game_text = f"""
-🎮 **CaptainCat Adventure Game** 🦸‍♂️
+        # Testo del gioco personalizzato per gruppo/privato
+        if is_group:
+            game_text = f"""
+🎮 **{user.first_name} sta per giocare a CaptainCat Adventure!** 🦸‍♂️
+
+🌟 **Il Gioco Crypto più Divertente:**
+• Raccogli CAT coin d'oro (100 pts)
+• Sconfiggi bear market (200 pts) 
+• Livelli progressivi crypto-themed
+• Scala la classifica del gruppo!
+
+🏆 **Compete nel gruppo per:**
+• Essere il #1 della leaderboard
+• Ottenere riconoscimenti speciali
+• Vincere tornei settimanali
+• Guadagnare CAT rewards!
+
+🎯 **Funziona meglio in chat privata per performance ottimali**
+            """
+        else:
+            game_text = f"""
+🎮 **CaptainCat Adventure** 🦸‍♂️
 
 Ciao {user.first_name}! Pronto per l'avventura crypto?
 
@@ -222,14 +377,41 @@ Ciao {user.first_name}! Pronto per l'avventura crypto?
 • Integrazione con il token CAT
 
 🎯 **Tip:** Usa i controlli touch per mobile o le frecce per desktop!
-        """
+            """
         
-        # Gestisce sia messaggi che callback
-        if update.callback_query:
-            await update.callback_query.edit_message_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
+        # Pulsanti diversi per gruppo vs privato
+        try:
+            if is_group:
+                keyboard = [
+                    [InlineKeyboardButton("🎮 Gioca (Web App)", web_app=WebAppInfo(url=self._web_app_url))],
+                    [InlineKeyboardButton("🤖 Chat Privata", url=f"https://t.me/{context.bot.username}"),
+                     InlineKeyboardButton("🔗 Link Diretto", url=self._web_app_url)],
+                    [InlineKeyboardButton("🏆 Classifica Gruppo", callback_data="leaderboard")]
+                ]
+            else:
+                keyboard = [
+                    [InlineKeyboardButton("🎮 Gioca a CaptainCat Adventure! 🦸‍♂️", web_app=WebAppInfo(url=self._web_app_url))],
+                    [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
+                     InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+                ]
+            
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            # Gestisce sia messaggi che callback
+            if update.callback_query:
+                await update.callback_query.edit_message_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
+            else:
+                await update.message.reply_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
+                
+        except BadRequest as e:
+            if "Button_type_invalid" in str(e):
+                logger.warning("Web App button failed, sending fallback")
+                await self._send_game_fallback(update, context)
+            else:
+                raise e
 
+    @rate_limit(max_calls=5, period=60)
+    @handle_errors
     async def mystats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Statistiche personali del giocatore"""
         user_id = update.effective_user.id
@@ -321,8 +503,10 @@ Ciao {user.first_name}! Pronto per l'avventura crypto?
         else:
             return "Sei già una LEGGENDA! Mantieni il primo posto! 🏆"
 
+    @rate_limit(max_calls=3, period=60, group_max_calls=10, group_period=60)
+    @handle_errors
     async def leaderboard_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Classifica del gioco"""
+        """Classifica del gioco ottimizzata"""
         chat_id = update.effective_chat.id
         is_group = chat_id < 0
         
@@ -404,6 +588,7 @@ Sii il primo eroe a:
         else:
             await update.message.reply_text(leaderboard_text, reply_markup=reply_markup, parse_mode='Markdown')
 
+    @handle_errors
     async def handle_web_app_data(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Gestisce i dati dal gioco Web App"""
         if update.message and update.message.web_app_data:
@@ -416,7 +601,7 @@ Sii il primo eroe a:
                 is_group = chat_id < 0
                 
                 # Salva punteggio nel database
-                await self.db.save_score(
+                saved = await self.db.save_score(
                     user_id=user.id,
                     username=user.username,
                     first_name=user.first_name,
@@ -460,8 +645,11 @@ Sii il primo eroe a:
                 stats_detail += f"💀 Bear Market sconfitti: {enemies}\n"
                 stats_detail += f"🎯 Livello raggiunto: {level}\n"
                 
+                if not saved:
+                    stats_detail += "\n⚠️ *Punteggio non salvato - database temporaneamente non disponibile*"
+                
                 # Controlla se è un nuovo record del gruppo
-                if is_group:
+                if is_group and saved:
                     leaderboard = await self.db.get_group_leaderboard(chat_id, 1)
                     if leaderboard and leaderboard[0]['score'] <= score and leaderboard[0]['user_id'] == user.id:
                         message += f"\n\n🏆 **NUOVO RECORD DEL GRUPPO!** 🏆 {celebration}"
@@ -483,7 +671,8 @@ Sii il primo eroe a:
                 logger.error(f"Errore handling web app data: {e}")
                 await update.message.reply_text("⚠️ Problema temporaneo nel salvare i dati. Il gioco funziona comunque!")
 
-    # Tutti gli altri metodi esistenti rimangono uguali...
+    # Tutti gli altri metodi esistenti con gestione errori migliorata...
+    @handle_errors
     async def language_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         available_langs = get_available_languages()
@@ -504,6 +693,7 @@ Sii il primo eroe a:
         else:
             await update.message.reply_text(lang_msg, reply_markup=reply_markup, parse_mode='Markdown')
 
+    @handle_errors
     async def button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         await query.answer()
@@ -546,8 +736,11 @@ Sii il primo eroe a:
             await self.language_command(update, context)
 
     # Tutti gli altri metodi esistenti rimangono identici...
+    @handle_errors
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
+        
+        db_status = "✅ Connesso" if self.db.pool else "⚠️ Non disponibile"
         
         status_msg = f"""
 {self.t(user_id, 'status_title')}
@@ -558,13 +751,16 @@ Sii il primo eroe a:
 ⏰ **Uptime: 24/7**
 🔄 **Ultimo aggiornamento: {datetime.now().strftime('%d/%m/%Y %H:%M')}**
 🌍 **Lingue supportate: 5**
-🗃️ **Database: {"✅ Connesso" if self.db.pool else "⚠️ Locale"}**
+🗃️ **Database: {db_status}**
+🛡️ **Rate Limiting: ATTIVO**
+🔧 **Error Handling: OTTIMIZZATO**
 
 💪 **Pronto ad aiutare la community e ospitare tornei di gioco!**
         """
         await update.message.reply_text(status_msg, parse_mode='Markdown')
 
     # Metodi esistenti per tutti gli altri comandi...
+    @handle_errors
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         help_text = f"""{self.t(user_id, 'help_commands')}
@@ -574,7 +770,13 @@ Sii il primo eroe a:
 /play - Alias per /game
 /mystats - Le tue statistiche di gioco
 /leaderboard - Classifica del gioco
-/gametop - Alias per /leaderboard"""
+/gametop - Alias per /leaderboard
+
+⚡ **OTTIMIZZAZIONI:**
+• Rate limiting per gruppi
+• Fallback automatico
+• Error handling avanzato
+• Performance migliorate"""
         
         if update.callback_query:
             await update.callback_query.edit_message_text(help_text, parse_mode='Markdown')
@@ -582,6 +784,7 @@ Sii il primo eroe a:
             await update.message.reply_text(help_text, parse_mode='Markdown')
 
     # Tutti gli altri metodi esistenti del bot rimangono identici...
+    @handle_errors
     async def price_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -609,6 +812,7 @@ Sii il primo eroe a:
         
         await update.message.reply_text(price_info, reply_markup=reply_markup, parse_mode='Markdown')
 
+    @handle_errors
     async def presale_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -646,6 +850,7 @@ Sii il primo eroe a:
         else:
             await update.message.reply_text(presale_info, reply_markup=reply_markup, parse_mode='Markdown')
 
+    @handle_errors
     async def roadmap_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -682,6 +887,7 @@ Sii il primo eroe a:
         else:
             await update.message.reply_text(roadmap_info, parse_mode='Markdown')
 
+    @handle_errors
     async def team_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -710,6 +916,7 @@ Sviluppatori specializzati in Web3 gaming
         else:
             await update.message.reply_text(team_info, parse_mode='Markdown')
 
+    @handle_errors
     async def utility_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -745,6 +952,7 @@ Sviluppatori specializzati in Web3 gaming
         
         await update.message.reply_text(utility_info, parse_mode='Markdown')
 
+    @handle_errors
     async def community_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -771,6 +979,7 @@ Sviluppatori specializzati in Web3 gaming
         else:
             await update.message.reply_text(community_info, reply_markup=reply_markup, parse_mode='Markdown')
 
+    @handle_errors
     async def staking_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -800,6 +1009,7 @@ Sviluppatori specializzati in Web3 gaming
         
         await update.message.reply_text(staking_info, parse_mode='Markdown')
 
+    @handle_errors
     async def nft_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -829,6 +1039,8 @@ Sviluppatori specializzati in Web3 gaming
         
         await update.message.reply_text(nft_info, parse_mode='Markdown')
 
+    @rate_limit(max_calls=10, period=60, group_max_calls=20, group_period=60)
+    @handle_errors
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = update.message.text.lower()
         user_id = update.effective_user.id
@@ -874,7 +1086,7 @@ Sviluppatori specializzati in Web3 gaming
         await self.db.init_pool()
 
     def run(self):
-        print("🐱‍🦸 CaptainCat Bot with Game starting on Render...")
+        print("🐱‍🦸 CaptainCat Bot with Optimized Group Support starting on Render...")
         
         # Inizializza database
         async def startup():
@@ -885,7 +1097,13 @@ Sviluppatori specializzati in Web3 gaming
         loop = asyncio.get_event_loop()
         loop.run_until_complete(startup())
         
-        self.app.run_polling(drop_pending_updates=True)
+        # Configurazioni per stabilità
+        self.app.run_polling(
+            drop_pending_updates=True,
+            allowed_updates=["message", "callback_query"],
+            poll_interval=1.0,
+            timeout=10
+        )
 
 # Script principale
 if __name__ == "__main__":
@@ -895,6 +1113,6 @@ if __name__ == "__main__":
         print("❌ ERRORE: Variabile BOT_TOKEN non trovata!")
         print("💡 Configura la variabile d'ambiente BOT_TOKEN su Render")
     else:
-        print(f"🚀 Starting CaptainCat Bot with Game Integration...")
+        print(f"🚀 Starting CaptainCat Bot with Optimized Group Performance...")
         bot = CaptainCatBot(BOT_TOKEN)
         bot.run()
