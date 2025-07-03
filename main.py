@@ -1269,7 +1269,7 @@ Be the first hero to:
         """
         
         keyboard = [
-            [InlineKeyboardButton("💎 Join Presale", url="https://t.me/Captain_cat_Cain")]
+            [InlineKeyboardButton("💎 Join Presale", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -1302,7 +1302,7 @@ Be the first hero to:
         """
         
         keyboard = [
-            [InlineKeyboardButton("🚀 Join Presale", url="https://t.me/Captain_cat_Cain")]
+            [InlineKeyboardButton("🚀 Join Presale", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
