@@ -11,7 +11,6 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from telegram.error import BadRequest, TimedOut, NetworkError
 import random
 from functools import wraps
-from translations import get_text, get_available_languages, get_language_flag, TRANSLATIONS
 
 # Configurazione logging
 logging.basicConfig(
@@ -41,7 +40,7 @@ def rate_limit(max_calls=5, period=60, group_max_calls=10, group_period=30):
                 calls[user_id] = [call for call in calls[user_id] if call > now - period]
                 if len(calls[user_id]) >= max_calls:
                     if not is_group:  # Solo in privato mostra il messaggio di rate limit
-                        await update.message.reply_text("⏱️ Troppo veloce! Riprova tra un minuto.")
+                        await update.message.reply_text("⏱️ Too fast! Try again in a minute.")
                     return
             else:
                 calls[user_id] = []
@@ -83,7 +82,7 @@ def handle_errors(func):
             logger.error(f"Unexpected error in {func.__name__}: {e}")
             if update.message:
                 try:
-                    await update.message.reply_text("🔧 Problema temporaneo. Riprova tra poco!")
+                    await update.message.reply_text("🔧 Temporary issue. Try again in a moment!")
                 except:
                     pass
             return
@@ -103,7 +102,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     if isinstance(update, Update) and update.effective_message:
         try:
             await update.effective_message.reply_text(
-                "🔧 Si è verificato un errore temporaneo. Riprova tra poco!"
+                "🔧 A temporary error occurred. Try again in a moment!"
             )
         except Exception:
             pass
@@ -237,26 +236,14 @@ class CaptainCatBot:
     def __init__(self, token: str):
         self.token = token
         self.app = Application.builder().token(token).build()
-        self.user_languages = {}
         self.db = GameDatabase()
         self._web_app_url = os.environ.get('WEBAPP_URL', 'https://captaincat-game.onrender.com')
         self.setup_handlers()
 
-    def get_user_language(self, user_id: int) -> str:
-        return self.user_languages.get(user_id, 'it')
-
-    def set_user_language(self, user_id: int, lang_code: str):
-        self.user_languages[user_id] = lang_code
-
-    def t(self, user_id: int, key: str) -> str:
-        lang = self.get_user_language(user_id)
-        return get_text(lang, key)
-
     def setup_handlers(self):
-        # Handler esistenti
+        # Basic handlers
         self.app.add_handler(CommandHandler("start", self.start_command))
         self.app.add_handler(CommandHandler("help", self.help_command))
-        self.app.add_handler(CommandHandler("language", self.language_command))
         self.app.add_handler(CommandHandler("price", self.price_command))
         self.app.add_handler(CommandHandler("roadmap", self.roadmap_command))
         self.app.add_handler(CommandHandler("team", self.team_command))
@@ -267,7 +254,7 @@ class CaptainCatBot:
         self.app.add_handler(CommandHandler("nft", self.nft_command))
         self.app.add_handler(CommandHandler("status", self.status_command))
         
-        # Nuovi handler per il gioco con rate limiting
+        # Game handlers with rate limiting
         self.app.add_handler(CommandHandler("game", self.game_command))
         self.app.add_handler(CommandHandler("play", self.game_command))
         self.app.add_handler(CommandHandler("mystats", self.mystats_command))
@@ -277,32 +264,32 @@ class CaptainCatBot:
         self.app.add_handler(CallbackQueryHandler(self.button_handler))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
         
-        # Handler per dati Web App
+        # Web App data handler
         self.app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, self.handle_web_app_data))
         
-        # Aggiungi error handler
+        # Add error handler
         self.app.add_error_handler(error_handler)
 
     async def _send_game_fallback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Fallback quando Web App non funziona"""
+        """Fallback when Web App doesn't work"""
         user = update.effective_user
         
         fallback_text = f"""
 🎮 **CaptainCat Adventure** 🦸‍♂️
 
-{user.first_name}, il gioco è temporaneamente in manutenzione.
+{user.first_name}, the game is temporarily under maintenance.
 
-🎯 **Come giocare:**
-1. Clicca "Link Diretto" qui sotto
-2. Oppure usa la Chat Privata
-3. Divertiti e scala la classifica!
+🎯 **How to play:**
+1. Click "Direct Link" below
+2. Or use Private Chat
+3. Have fun and climb the leaderboard!
 
-🏆 I punteggi saranno salvati per questo gruppo!
+🏆 Scores will be saved for this group!
         """
         
         keyboard = [
-            [InlineKeyboardButton("🤖 Chat Privata", url=f"https://t.me/{context.bot.username}")],
-            [InlineKeyboardButton("🔗 Link Diretto", url=self._web_app_url)]
+            [InlineKeyboardButton("🤖 Private Chat", url=f"https://t.me/{context.bot.username}")],
+            [InlineKeyboardButton("🔗 Direct Link", url=self._web_app_url)]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -316,33 +303,30 @@ class CaptainCatBot:
 
     @handle_errors
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         keyboard = [
             [InlineKeyboardButton("🎮 CaptainCat Game!", callback_data="game"),
-             InlineKeyboardButton(self.t(user_id, 'btn_presale'), callback_data="presale")],
-            [InlineKeyboardButton(self.t(user_id, 'btn_roadmap'), callback_data="roadmap"),
-             InlineKeyboardButton(self.t(user_id, 'btn_team'), callback_data="team")],
+             InlineKeyboardButton("💎 Presale", callback_data="presale")],
+            [InlineKeyboardButton("🗺️ Roadmap", callback_data="roadmap"),
+             InlineKeyboardButton("👥 Team", callback_data="team")],
             [InlineKeyboardButton("🏆 Game Leaderboard", callback_data="leaderboard"),
-             InlineKeyboardButton(self.t(user_id, 'btn_community'), callback_data="community")],
-            [InlineKeyboardButton(self.t(user_id, 'btn_help'), callback_data="help"),
-             InlineKeyboardButton(self.t(user_id, 'btn_language'), callback_data="language")]
+             InlineKeyboardButton("📱 Community", callback_data="community")],
+            [InlineKeyboardButton("❓ Help", callback_data="help")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         welcome_msg = f"""
-{self.t(user_id, 'welcome_title')}
+🐱‍🦸 **WELCOME TO CAPTAINCAT!**
 
-{self.t(user_id, 'welcome_msg')}
+Hello future hero! I'm CaptainCat AI, the superhero of meme coins!
 
-🎮 **NOVITÀ: CaptainCat Adventure Game!**
-Gioca, raccogli CAT coin e scala la classifica!
+🎮 **NEW: CaptainCat Adventure Game!**
+Play, collect CAT coins and climb the leaderboard!
 
-{self.t(user_id, 'presale_active')}
-{self.t(user_id, 'target_listing')}
-{self.t(user_id, 'community_goal')}
+🚀 **We're in PRESALE!**
+💎 **1500 TON for listing**
+🎯 **Goal: 10K community members**
 
-{self.t(user_id, 'what_know')}
+What do you want to know today?
         """
         
         await update.message.reply_text(welcome_msg, reply_markup=reply_markup, parse_mode='Markdown')
@@ -350,7 +334,7 @@ Gioca, raccogli CAT coin e scala la classifica!
     @rate_limit(max_calls=3, period=60, group_max_calls=15, group_period=60)
     @handle_errors
     async def game_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Comando principale per il gioco ottimizzato per gruppi"""
+        """Main game command optimized for groups"""
         user_id = update.effective_user.id
         user = update.effective_user
         chat_id = update.effective_chat.id
@@ -358,78 +342,78 @@ Gioca, raccogli CAT coin e scala la classifica!
         
         logger.info(f"Game command from user {user_id} in {'group' if is_group else 'private'} {chat_id}")
         
-        # Testo del gioco personalizzato per gruppo/privato
+        # Game text customized for group/private
         if is_group:
             game_text = f"""
-🎮 **{user.first_name} sta per giocare a CaptainCat Adventure!** 🦸‍♂️
+🎮 **{user.first_name} is about to play CaptainCat Adventure!** 🦸‍♂️
 
-🌟 **Il Gioco Crypto più Divertente:**
-• Raccogli CAT coin d'oro (100 pts)
-• Sconfiggi bear market (200 pts) 
-• Livelli progressivi crypto-themed
-• Scala la classifica del gruppo!
+🌟 **The Most Fun Crypto Game:**
+• Collect golden CAT coins (100 pts)
+• Defeat bear markets (200 pts) 
+• Progressive crypto-themed levels
+• Climb the group leaderboard!
 
-🏆 **Compete nel gruppo per:**
-• Essere il #1 della leaderboard
-• Ottenere riconoscimenti speciali
-• Vincere tornei settimanali
-• Guadagnare CAT rewards!
+🏆 **Compete in the group for:**
+• Being #1 on the leaderboard
+• Getting special recognition
+• Winning weekly tournaments
+• Earning CAT rewards!
 
-🎯 **Link diretto per una migliore esperienza:**
+🎯 **Direct link for better experience:**
             """
         else:
             game_text = f"""
 🎮 **CaptainCat Adventure** 🦸‍♂️
 
-Ciao {user.first_name}! Pronto per l'avventura crypto?
+Hello {user.first_name}! Ready for the crypto adventure?
 
-🌟 **Obiettivi del Gioco:**
-• Raccogli CAT coin d'oro (100 punti)
-• Sconfiggi i bear market (200 punti)
-• Supera tutti i livelli (500 bonus)
-• Diventa il #1 della classifica!
+🌟 **Game Objectives:**
+• Collect golden CAT coins (100 points)
+• Defeat bear markets (200 points)
+• Complete all levels (500 bonus)
+• Become #1 on the leaderboard!
 
-🚀 **Meccaniche Speciali:**
-• Power-up bull market per boost
-• Combo multiplier per punteggi alti
-• Nemici a tema crypto
-• Livelli progressivi sempre più difficili
+🚀 **Special Mechanics:**
+• Bull market power-ups for boost
+• Combo multiplier for high scores
+• Crypto-themed enemies
+• Progressive levels getting harder
 
-💎 **Premi Community:**
-• Top player ottengono riconoscimenti speciali
-• Tornei settimanali con premi
-• Integrazione con il token CAT
+💎 **Community Rewards:**
+• Top players get special recognition
+• Weekly tournaments with prizes
+• CAT token integration
 
-🎯 **Tip:** Usa i controlli touch per mobile o le frecce per desktop!
+🎯 **Tip:** Use touch controls for mobile or arrows for desktop!
             """
         
-        # Pulsanti diversi per gruppo vs privato - usando solo link normali per evitare Web App issues
+        # Different buttons for group vs private - using only normal links to avoid Web App issues
         try:
             if is_group:
                 keyboard = [
-                    [InlineKeyboardButton("🎮 Gioca Ora! 🦸‍♂️", url=self._web_app_url)],
-                    [InlineKeyboardButton("🤖 Chat Privata", url=f"https://t.me/{context.bot.username}"),
-                     InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+                    [InlineKeyboardButton("🎮 Play Now! 🦸‍♂️", url=self._web_app_url)],
+                    [InlineKeyboardButton("🤖 Private Chat", url=f"https://t.me/{context.bot.username}"),
+                     InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
                 ]
             else:
-                # In chat privata, prova prima Web App poi fallback
+                # In private chat, try Web App first then fallback
                 try:
                     keyboard = [
-                        [InlineKeyboardButton("🎮 Gioca a CaptainCat Adventure! 🦸‍♂️", web_app=WebAppInfo(url=self._web_app_url))],
-                        [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
-                         InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+                        [InlineKeyboardButton("🎮 Play CaptainCat Adventure! 🦸‍♂️", web_app=WebAppInfo(url=self._web_app_url))],
+                        [InlineKeyboardButton("📊 My Stats", callback_data="mystats"),
+                         InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
                     ]
                 except Exception:
-                    # Fallback se Web App non supportato
+                    # Fallback if Web App not supported
                     keyboard = [
-                        [InlineKeyboardButton("🎮 Gioca Ora! 🦸‍♂️", url=self._web_app_url)],
-                        [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
-                         InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+                        [InlineKeyboardButton("🎮 Play Now! 🦸‍♂️", url=self._web_app_url)],
+                        [InlineKeyboardButton("📊 My Stats", callback_data="mystats"),
+                         InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
                     ]
             
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            # Gestisce sia messaggi che callback
+            # Handle both messages and callbacks
             if update.callback_query:
                 await update.callback_query.edit_message_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
             else:
@@ -445,7 +429,7 @@ Ciao {user.first_name}! Pronto per l'avventura crypto?
     @rate_limit(max_calls=5, period=60)
     @handle_errors
     async def mystats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Statistiche personali del giocatore"""
+        """Player personal statistics"""
         user_id = update.effective_user.id
         user = update.effective_user
         
@@ -453,28 +437,28 @@ Ciao {user.first_name}! Pronto per l'avventura crypto?
         
         if not stats or stats['best_score'] is None:
             no_stats_text = f"""
-🎮 **{user.first_name}, non hai ancora giocato!**
+🎮 **{user.first_name}, you haven't played yet!**
 
-🚀 **Inizia subito la tua avventura crypto:**
-• Raccogli CAT coin
-• Sconfiggi i bear market  
-• Scala la classifica
-• Diventa una leggenda!
+🚀 **Start your crypto adventure now:**
+• Collect CAT coins
+• Defeat bear markets  
+• Climb the leaderboard
+• Become a legend!
 
-🎯 Clicca "Gioca Ora" per iniziare!
+🎯 Click "Play Now" to start!
             """
             
-            keyboard = [[InlineKeyboardButton("🎮 Gioca Ora!", callback_data="game")]]
+            keyboard = [[InlineKeyboardButton("🎮 Play Now!", callback_data="game")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            # Gestisce sia messaggi che callback
+            # Handle both messages and callbacks
             if update.callback_query:
                 await update.callback_query.edit_message_text(no_stats_text, reply_markup=reply_markup, parse_mode='Markdown')
             else:
                 await update.message.reply_text(no_stats_text, reply_markup=reply_markup, parse_mode='Markdown')
             return
         
-        # Calcola il grado del giocatore
+        # Calculate player grade
         if stats['best_score'] >= 50000:
             grade = "🏆 CRYPTO LEGEND"
             grade_emoji = "👑"
@@ -495,88 +479,88 @@ Ciao {user.first_name}! Pronto per l'avventura crypto?
             grade_emoji = "🌱"
         
         stats_text = f"""
-📊 **Statistiche di {user.first_name}** {grade_emoji}
+📊 **{user.first_name}'s Statistics** {grade_emoji}
 
-🏆 **Grado:** {grade}
-⭐ **Miglior Punteggio:** {stats['best_score']:,} punti
-🎯 **Livello Massimo:** {stats['max_level']}
-🪙 **CAT Coin Raccolte:** {stats['total_coins']:,}
-💀 **Bear Market Sconfitti:** {stats['total_enemies']:,}
-🎮 **Partite Giocate:** {stats['games_played']}
+🏆 **Grade:** {grade}
+⭐ **Best Score:** {stats['best_score']:,} points
+🎯 **Max Level:** {stats['max_level']}
+🪙 **CAT Coins Collected:** {stats['total_coins']:,}
+💀 **Bear Markets Defeated:** {stats['total_enemies']:,}
+🎮 **Games Played:** {stats['games_played']}
 
-🔥 **Prossimo Obiettivo:**
+🔥 **Next Goal:**
 {self._get_next_goal(stats['best_score'])}
         """
         
         keyboard = [
-            [InlineKeyboardButton("🎮 Gioca Ancora!", callback_data="game")],
-            [InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+            [InlineKeyboardButton("🎮 Play Again!", callback_data="game")],
+            [InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Gestisce sia messaggi che callback
+        # Handle both messages and callbacks
         if update.callback_query:
             await update.callback_query.edit_message_text(stats_text, reply_markup=reply_markup, parse_mode='Markdown')
         else:
             await update.message.reply_text(stats_text, reply_markup=reply_markup, parse_mode='Markdown')
 
     def _get_next_goal(self, current_score):
-        """Calcola il prossimo obiettivo del giocatore"""
+        """Calculate player's next goal"""
         if current_score < 1000:
-            return "Raggiungi 1,000 punti per diventare CAT HERO! 🐱"
+            return "Reach 1,000 points to become CAT HERO! 🐱"
         elif current_score < 5000:
-            return "Raggiungi 5,000 punti per diventare BULL RUNNER! ⚡"
+            return "Reach 5,000 points to become BULL RUNNER! ⚡"
         elif current_score < 10000:
-            return "Raggiungi 10,000 punti per diventare MOON WALKER! 🚀"
+            return "Reach 10,000 points to become MOON WALKER! 🚀"
         elif current_score < 25000:
-            return "Raggiungi 25,000 punti per DIAMOND HANDS! 💎"
+            return "Reach 25,000 points for DIAMOND HANDS! 💎"
         elif current_score < 50000:
-            return "Raggiungi 50,000 punti per CRYPTO LEGEND! 👑"
+            return "Reach 50,000 points for CRYPTO LEGEND! 👑"
         else:
-            return "Sei già una LEGGENDA! Mantieni il primo posto! 🏆"
+            return "You're already a LEGEND! Keep the first place! 🏆"
 
     @rate_limit(max_calls=3, period=60, group_max_calls=10, group_period=60)
     @handle_errors
     async def leaderboard_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Classifica del gioco ottimizzata"""
+        """Optimized game leaderboard"""
         chat_id = update.effective_chat.id
         is_group = chat_id < 0
         
-        # Ottieni classifica (specifica del gruppo se in un gruppo)
+        # Get leaderboard (group-specific if in a group)
         leaderboard = await self.db.get_group_leaderboard(chat_id if is_group else None, 10)
         
         if not leaderboard:
             no_players_text = f"""
 🏆 **CaptainCat Game Leaderboard** 🏆
 
-🎮 **Nessuno ha ancora giocato!**
+🎮 **No one has played yet!**
 
-Sii il primo eroe a:
-• Iniziare l'avventura
-• Stabilire il record
-• Diventare una leggenda
-• Conquistare la classifica!
+Be the first hero to:
+• Start the adventure
+• Set the record
+• Become a legend
+• Conquer the leaderboard!
 
-🚀 **La gloria ti aspetta!**
+🚀 **Glory awaits you!**
             """
             
-            keyboard = [[InlineKeyboardButton("🎮 Sii il Primo!", callback_data="game")]]
+            keyboard = [[InlineKeyboardButton("🎮 Be the First!", callback_data="game")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
-            # Gestisce sia messaggi che callback
+            # Handle both messages and callbacks
             if update.callback_query:
                 await update.callback_query.edit_message_text(no_players_text, reply_markup=reply_markup, parse_mode='Markdown')
             else:
                 await update.message.reply_text(no_players_text, reply_markup=reply_markup, parse_mode='Markdown')
             return
         
-        # Crea la classifica
+        # Create leaderboard
         leaderboard_text = "🏆 **CAPTAINCAT GAME LEADERBOARD** 🏆\n\n"
         
         if is_group:
-            leaderboard_text += "🎯 **Classifica del Gruppo** 🎯\n\n"
+            leaderboard_text += "🎯 **Group Leaderboard** 🎯\n\n"
         else:
-            leaderboard_text += "🌍 **Classifica Globale** 🌍\n\n"
+            leaderboard_text += "🌍 **Global Leaderboard** 🌍\n\n"
         
         medals = ["🥇", "🥈", "🥉"]
         for i, player in enumerate(leaderboard):
@@ -589,7 +573,7 @@ Sii il primo eroe a:
             score = player['score']
             level = player['level']
             
-            # Emoji per il grado
+            # Grade emoji
             if score >= 50000:
                 grade_emoji = "👑"
             elif score >= 25000:
@@ -605,16 +589,16 @@ Sii il primo eroe a:
             
             leaderboard_text += f"{medal} {grade_emoji} **{name}** - {score:,} pts (Lv.{level})\n"
         
-        leaderboard_text += f"\n🎮 **Vuoi entrare in classifica? Gioca ora!**"
-        leaderboard_text += f"\n🏆 **{len(leaderboard)} eroi hanno già giocato!**"
+        leaderboard_text += f"\n🎮 **Want to join the leaderboard? Play now!**"
+        leaderboard_text += f"\n🏆 **{len(leaderboard)} heroes have already played!**"
         
         keyboard = [
-            [InlineKeyboardButton("🎮 Gioca Ora!", callback_data="game")],
-            [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats")]
+            [InlineKeyboardButton("🎮 Play Now!", callback_data="game")],
+            [InlineKeyboardButton("📊 My Stats", callback_data="mystats")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Gestisce sia messaggi che callback
+        # Handle both messages and callbacks
         if update.callback_query:
             await update.callback_query.edit_message_text(leaderboard_text, reply_markup=reply_markup, parse_mode='Markdown')
         else:
@@ -622,17 +606,17 @@ Sii il primo eroe a:
 
     @handle_errors
     async def handle_web_app_data(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Gestisce i dati dal gioco Web App"""
+        """Handle data from Web App game"""
         if update.message and update.message.web_app_data:
             try:
-                # Parse risultati dal gioco
+                # Parse game results
                 data = json.loads(update.message.web_app_data.data)
                 
                 user = update.effective_user
                 chat_id = update.effective_chat.id
                 is_group = chat_id < 0
                 
-                # Salva punteggio nel database
+                # Save score to database
                 saved = await self.db.save_score(
                     user_id=user.id,
                     username=user.username,
@@ -645,115 +629,77 @@ Sii il primo eroe a:
                     group_id=chat_id if is_group else None
                 )
                 
-                # Messaggio di congratulazioni
+                # Congratulations message
                 score = data.get('score', 0)
                 level = data.get('level', 1)
                 coins = data.get('coins', 0)
                 enemies = data.get('enemies', 0)
                 
-                # Determina il tipo di messaggio basato sul punteggio
+                # Determine message type based on score
                 if score >= 50000:
-                    message = f"👑 **LEGGENDA ASSOLUTA!** 👑\n{user.first_name} ha raggiunto {score:,} punti! 🏆✨"
+                    message = f"👑 **ABSOLUTE LEGEND!** 👑\n{user.first_name} reached {score:,} points! 🏆✨"
                     celebration = "🎊🎊🎊"
                 elif score >= 25000:
-                    message = f"💎 **DIAMOND HANDS ACHIEVED!** 💎\n{user.first_name} ha totalizzato {score:,} punti! 🚀🌙"
+                    message = f"💎 **DIAMOND HANDS ACHIEVED!** 💎\n{user.first_name} scored {score:,} points! 🚀🌙"
                     celebration = "🔥🔥🔥"
                 elif score >= 10000:
-                    message = f"🚀 **MOON WALKER!** 🚀\n{user.first_name} ha fatto {score:,} punti! 🌙⭐"
+                    message = f"🚀 **MOON WALKER!** 🚀\n{user.first_name} got {score:,} points! 🌙⭐"
                     celebration = "⚡⚡⚡"
                 elif score >= 5000:
-                    message = f"⚡ **BULL RUNNER!** ⚡\n{user.first_name} ha raggiunto {score:,} punti! 📈💪"
+                    message = f"⚡ **BULL RUNNER!** ⚡\n{user.first_name} reached {score:,} points! 📈💪"
                     celebration = "🎯🎯🎯"
                 elif score >= 1000:
-                    message = f"🐱 **CAT HERO!** 🐱\n{user.first_name} ha totalizzato {score:,} punti! 🎮💫"
+                    message = f"🐱 **CAT HERO!** 🐱\n{user.first_name} scored {score:,} points! 🎮💫"
                     celebration = "🎉🎉🎉"
                 else:
-                    message = f"🌱 **Ottimo inizio!** 🌱\n{user.first_name} ha fatto {score:,} punti! 💪🎮"
+                    message = f"🌱 **Great start!** 🌱\n{user.first_name} got {score:,} points! 💪🎮"
                     celebration = "👏👏👏"
                 
-                # Statistiche dettagliate
-                stats_detail = f"\n\n📊 **Statistiche Partita:**\n"
-                stats_detail += f"🪙 CAT Coin: {coins}\n"
-                stats_detail += f"💀 Bear Market sconfitti: {enemies}\n"
-                stats_detail += f"🎯 Livello raggiunto: {level}\n"
+                # Detailed statistics
+                stats_detail = f"\n\n📊 **Game Statistics:**\n"
+                stats_detail += f"🪙 CAT Coins: {coins}\n"
+                stats_detail += f"💀 Bear Markets defeated: {enemies}\n"
+                stats_detail += f"🎯 Level reached: {level}\n"
                 
                 if not saved:
-                    stats_detail += "\n⚠️ *Punteggio non salvato - database temporaneamente non disponibile*"
+                    stats_detail += "\n⚠️ *Score not saved - database temporarily unavailable*"
                 
-                # Controlla se è un nuovo record del gruppo
+                # Check if it's a new group record
                 if is_group and saved:
                     leaderboard = await self.db.get_group_leaderboard(chat_id, 1)
                     if leaderboard and leaderboard[0]['score'] <= score and leaderboard[0]['user_id'] == user.id:
-                        message += f"\n\n🏆 **NUOVO RECORD DEL GRUPPO!** 🏆 {celebration}"
+                        message += f"\n\n🏆 **NEW GROUP RECORD!** 🏆 {celebration}"
                 
                 message += stats_detail
                 
                 keyboard = [
-                    [InlineKeyboardButton("🎮 Gioca Ancora!", callback_data="game")],
-                    [InlineKeyboardButton("📊 Le Mie Stats", callback_data="mystats"),
-                     InlineKeyboardButton("🏆 Classifica", callback_data="leaderboard")]
+                    [InlineKeyboardButton("🎮 Play Again!", callback_data="game")],
+                    [InlineKeyboardButton("📊 My Stats", callback_data="mystats"),
+                     InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
                 await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
                 
             except json.JSONDecodeError:
-                await update.message.reply_text("❌ Errore nel salvare i risultati del gioco. Riprova!")
+                await update.message.reply_text("❌ Error saving game results. Try again!")
             except Exception as e:
-                logger.error(f"Errore handling web app data: {e}")
-                await update.message.reply_text("⚠️ Problema temporaneo nel salvare i dati. Il gioco funziona comunque!")
-
-    # Altri metodi esistenti rimangono identici ma con handle_errors...
-    @handle_errors
-    async def language_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        available_langs = get_available_languages()
-        
-        keyboard = []
-        for lang_code, lang_name in available_langs.items():
-            keyboard.append([InlineKeyboardButton(lang_name, callback_data=f"lang_{lang_code}")])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        current_lang = self.get_user_language(user_id)
-        flag = get_language_flag(current_lang)
-        
-        lang_msg = f"🌍 **CHOOSE YOUR LANGUAGE / SCEGLI LA TUA LINGUA**\n\n{flag} Current/Attuale: {available_langs.get(current_lang, 'Unknown')}"
-        
-        if update.callback_query:
-            await update.callback_query.edit_message_text(lang_msg, reply_markup=reply_markup, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(lang_msg, reply_markup=reply_markup, parse_mode='Markdown')
+                logger.error(f"Error handling web app data: {e}")
+                await update.message.reply_text("⚠️ Temporary issue saving data. The game still works!")
 
     @handle_errors
     async def button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         await query.answer()
         
-        user_id = update.effective_user.id
-        
-        # Gestione cambio lingua
-        if query.data.startswith("lang_"):
-            lang_code = query.data.split("_")[1]
-            self.set_user_language(user_id, lang_code)
-            
-            available_langs = get_available_languages()
-            lang_name = available_langs.get(lang_code, 'Unknown')
-            
-            await query.edit_message_text(
-                f"🌍 {self.t(user_id, 'language_changed')}\n\nLingua impostata: {lang_name}",
-                parse_mode='Markdown'
-            )
-            return
-        
-        # Handler per i bottoni del gioco
+        # Game button handlers
         if query.data == "game":
             await self.game_command(update, context)
         elif query.data == "mystats":
             await self.mystats_command(update, context)
         elif query.data == "leaderboard":
             await self.leaderboard_command(update, context)
-        # Altri bottoni esistenti
+        # Other existing buttons
         elif query.data == "presale":
             await self.presale_command(update, context)
         elif query.data == "roadmap":
@@ -764,50 +710,59 @@ Sii il primo eroe a:
             await self.community_command(update, context)
         elif query.data == "help":
             await self.help_command(update, context)
-        elif query.data == "language":
-            await self.language_command(update, context)
 
-    # Metodi esistenti per tutti gli altri comandi con handle_errors...
     @handle_errors
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
-        db_status = "✅ Connesso" if self.db.pool else "⚠️ Non disponibile"
+        db_status = "✅ Connected" if self.db.pool else "⚠️ Not available"
         
         status_msg = f"""
-{self.t(user_id, 'status_title')}
+🤖 **CAPTAINCAT BOT STATUS**
 
-✅ **Bot Online e Funzionante**
-🎮 **CaptainCat Game: ATTIVO**
+✅ **Bot Online and Working**
+🎮 **CaptainCat Game: ACTIVE**
 📡 **Server: Render.com**
 ⏰ **Uptime: 24/7**
-🔄 **Ultimo aggiornamento: {datetime.now().strftime('%d/%m/%Y %H:%M')}**
-🌍 **Lingue supportate: 5**
+🔄 **Last update: {datetime.now().strftime('%d/%m/%Y %H:%M')}**
 🗃️ **Database: {db_status}**
-🛡️ **Rate Limiting: ATTIVO**
-🔧 **Error Handling: OTTIMIZZATO**
+🛡️ **Rate Limiting: ACTIVE**
+🔧 **Error Handling: OPTIMIZED**
 
-💪 **Pronto ad aiutare la community e ospitare tornei di gioco!**
+💪 **Ready to help the community and host game tournaments!**
         """
         await update.message.reply_text(status_msg, parse_mode='Markdown')
 
     @handle_errors
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        help_text = f"""{self.t(user_id, 'help_commands')}
+        help_text = f"""🐱‍🦸 **CAPTAINCAT BOT COMMANDS**
 
-🎮 **COMANDI GIOCO:**
-/game - Avvia CaptainCat Adventure
-/play - Alias per /game
-/mystats - Le tue statistiche di gioco
-/leaderboard - Classifica del gioco
-/gametop - Alias per /leaderboard
+/start - Start conversation
+/help - Show this menu
+/price - Price and tokenomics info
+/roadmap - Project roadmap
+/team - Meet the team
+/utility - Token utility
+/presale - Presale info
+/community - Community links
+/game - GameFi info
+/staking - Staking rewards info
+/nft - NFT collection info
+/status - Bot status
 
-⚡ **OTTIMIZZAZIONI:**
-• Rate limiting per gruppi
-• Fallback automatico
-• Error handling avanzato
-• Performance migliorate"""
+🚀 **Just write and I'll respond!**
+Examples: "how much?", "when listing?", "how it works?"
+
+🎮 **GAME COMMANDS:**
+/game - Start CaptainCat Adventure
+/play - Alias for /game
+/mystats - Your game statistics
+/leaderboard - Game leaderboard
+/gametop - Alias for /leaderboard
+
+⚡ **OPTIMIZATIONS:**
+• Rate limiting for groups
+• Automatic fallback
+• Advanced error handling
+• Improved performance"""
         
         if update.callback_query:
             await update.callback_query.edit_message_text(help_text, parse_mode='Markdown')
@@ -816,27 +771,25 @@ Sii il primo eroe a:
 
     @handle_errors
     async def price_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         price_info = f"""
-{self.t(user_id, 'tokenomics_title')}
+💎 **CAPTAINCAT TOKENOMICS**
 
-🔥 **Prevendita Attiva!**
-💰 **Target Listing: 1500 TON**
-📊 **Supply Totale: 1,000,000,000 CAT**
+🔥 **Presale Active!**
+💰 **Listing Target: 1500 TON**
+📊 **Total Supply: 1,000,000,000 CAT**
 
-📈 **Distribuzione:**
-• 40% Prevendita
-• 30% Liquidità DEX  
+📈 **Distribution:**
+• 40% Presale
+• 30% DEX Liquidity  
 • 15% Team (locked)
 • 10% Marketing
 • 5% Game Rewards 🎮
 
-🚀 **Prossimo step: LISTING su DEX principali!**
+🚀 **Next step: LISTING on major DEXes!**
         """
         
         keyboard = [
-            [InlineKeyboardButton("💎 Partecipa alla Prevendita", url="https://t.me/Captain_cat_Cain")]
+            [InlineKeyboardButton("💎 Join Presale", url="https://t.me/Captain_cat_Cain")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -844,34 +797,32 @@ Sii il primo eroe a:
 
     @handle_errors
     async def presale_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         presale_info = f"""
-{self.t(user_id, 'presale_title')}
+💎 **CAPTAINCAT PRESALE**
 
-🔥 **FASE 2 ATTIVA!**
+🔥 **PHASE 2 ACTIVE!**
 
-💰 **Target: 1500 TON per listing**
-📊 **Progresso: 45% completato**
-⏰ **Tempo rimasto: Limitato!**
+💰 **Target: 1500 TON for listing**
+📊 **Progress: 45% completed**
+⏰ **Time remaining: Limited!**
 
-🎯 **Bonus Prevendita:**
+🎯 **Presale Bonuses:**
 • Early Bird: +20% tokens
 • Whale Bonus: +15% (>50 TON)
 • Community Bonus: +10%
-• Game Beta Access: INCLUSO! 🎮
+• Game Beta Access: INCLUDED! 🎮
 
-📱 **Come Partecipare:**
-1. Unisciti al gruppo Telegram
-2. Contatta gli admin
-3. Invia TON
-4. Ricevi CAT tokens + Game Access
+📱 **How to Participate:**
+1. Join Telegram group
+2. Contact admins
+3. Send TON
+4. Receive CAT tokens + Game Access
 
-🚀 **Non perdere l'opportunità!**
+🚀 **Don't miss the opportunity!**
         """
         
         keyboard = [
-            [InlineKeyboardButton("🚀 Unisciti alla Prevendita", url="https://t.me/Captain_cat_Cain")]
+            [InlineKeyboardButton("🚀 Join Presale", url="https://t.me/Captain_cat_Cain")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -882,31 +833,29 @@ Sii il primo eroe a:
 
     @handle_errors
     async def roadmap_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         roadmap_info = f"""
-{self.t(user_id, 'roadmap_title')}
+🗺️ **CAPTAINCAT ROADMAP**
 
-✅ **Fase 1 - Lancio** (COMPLETATO)
-• Smart contract sviluppato
-• Audit di sicurezza
-• Community Telegram
-• Website e branding
+✅ **Phase 1 - Launch** (COMPLETED)
+• Smart contract developed
+• Security audit
+• Telegram community
+• Website and branding
 
-🔄 **Fase 2 - Prevendita** (IN CORSO)
-• Prevendita privata
-• Partnership strategiche  
+🔄 **Phase 2 - Presale** (IN PROGRESS)
+• Private presale
+• Strategic partnerships  
 • Marketing campaign
 • CaptainCat Game LIVE! 🎮
 
-🎯 **Fase 3 - Listing** (Q1 2025)
-• Listing su DEX principali
+🎯 **Phase 3 - Listing** (Q1 2025)
+• Listing on major DEXes
 • CoinMarketCap & CoinGecko
 • Influencer partnerships
-• Tornei di gioco
+• Game tournaments
 
-🚀 **Fase 4 - Ecosistema** (Q2 2025)
-• Game espansione
+🚀 **Phase 4 - Ecosystem** (Q2 2025)
+• Game expansion
 • NFT Collection
 • Staking rewards
 • DAO governance
@@ -919,26 +868,24 @@ Sii il primo eroe a:
 
     @handle_errors
     async def team_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         team_info = f"""
-{self.t(user_id, 'team_title')}
+👥 **CAPTAINCAT TEAM**
 
 🦸‍♂️ **CZ - Founder & CEO**
-Visionario crypto con anni di esperienza in DeFi e GameFi
+Crypto visionary with years of DeFi and GameFi experience
 
 💻 **Dr. Eliax - Lead Developer**  
-Esperto in smart contracts e sicurezza blockchain
+Expert in smart contracts and blockchain security
 
 📈 **Rejane - Marketing Manager**
-Specialista in crescita community e marketing virale
+Specialist in community growth and viral marketing
 
 🎮 **Game Team - CaptainCat Studios**
-Sviluppatori specializzati in Web3 gaming
+Developers specialized in Web3 gaming
 
-🔒 **Team Verificato e Doxxed**
-🏆 **Track Record Comprovato**
-💪 **Esperienza Combinata: 20+ anni**
+🔒 **Verified and Doxxed Team**
+🏆 **Proven Track Record**
+💪 **Combined Experience: 20+ years**
         """
         
         if update.callback_query:
@@ -948,52 +895,48 @@ Sviluppatori specializzati in Web3 gaming
 
     @handle_errors
     async def utility_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         utility_info = f"""
-{self.t(user_id, 'utility_title')}
+⚡ **CAPTAINCAT UTILITY**
 
 🎮 **CaptainCat Adventure Game**
 • Play-to-Earn mechanics
-• Classifica competitiva
-• Tornei settimanali
-• CAT rewards per top player
+• Competitive leaderboard
+• Weekly tournaments
+• CAT rewards for top players
 
 💎 **Staking Rewards**
 • Stake CAT, earn rewards
-• Lock periods: 30/90/180 giorni
-• APY fino al 150%
+• Lock periods: 30/90/180 days
+• APY up to 150%
 
 🖼️ **NFT Collection**
 • CaptainCat Heroes NFT
-• Utility in-game
-• Collezioni limitate
+• In-game utility
+• Limited collections
 
 🗳️ **DAO Governance**
-• Vota le decisioni
-• Proponi miglioramenti  
-• Guida il futuro
+• Vote on decisions
+• Propose improvements  
+• Guide the future
 
 🔥 **Token Burn**
-• Burn mensili
+• Monthly burns
 • Deflationary mechanics
-• Aumento valore
+• Value increase
         """
         
         await update.message.reply_text(utility_info, parse_mode='Markdown')
 
     @handle_errors
     async def community_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         community_info = f"""
-{self.t(user_id, 'community_title')}
+📱 **CAPTAINCAT COMMUNITY**
 
-🎯 **Obiettivo: 10K Membri!**
-👥 **Attuali: 2.5K+ Eroi**
-🎮 **Giocatori Attivi: In Crescita!**
+🎯 **Goal: 10K Members!**
+👥 **Current: 2.5K+ Heroes**
+🎮 **Active Players: Growing!**
 
-🔗 **Links Ufficiali:**
+🔗 **Official Links:**
         """
         
         keyboard = [
@@ -1011,26 +954,24 @@ Sviluppatori specializzati in Web3 gaming
 
     @handle_errors
     async def staking_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         staking_info = f"""
-{self.t(user_id, 'staking_title')}
+💎 **CAPTAINCAT STAKING**
 
 🔒 **Stake CAT, Earn Rewards!**
 
-📊 **Pool Disponibili:**
-• 30 giorni - APY 50%
-• 90 giorni - APY 100%  
-• 180 giorni - APY 150%
+📊 **Available Pools:**
+• 30 days - APY 50%
+• 90 days - APY 100%  
+• 180 days - APY 150%
 
 🎁 **Bonus Features:**
-• Compound automatico
-• Early unstake (penale 10%)
-• Game boost per staker
-• Tornei esclusivi
+• Automatic compound
+• Early unstake (10% penalty)
+• Game boost for stakers
+• Exclusive tournaments
 
-💰 **Rewards Distribuiti:**
-• Daily: 0.1% del pool
+💰 **Rewards Distributed:**
+• Daily: 0.1% of pool
 • Weekly: Bonus NFT
 • Monthly: Token burn
 
@@ -1041,29 +982,27 @@ Sviluppatori specializzati in Web3 gaming
 
     @handle_errors
     async def nft_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        
         nft_info = f"""
-{self.t(user_id, 'nft_title')}
+🖼️ **CAPTAINCAT NFT COLLECTION**
 
 🦸‍♂️ **CaptainCat Heroes**
-• 10,000 NFT unici
-• 100+ traits rari
-• Utility in-game
+• 10,000 unique NFTs
+• 100+ rare traits
+• In-game utility
 
-🏆 **Rarità:**
+🏆 **Rarity:**
 • Common (60%) - Boost +10%
 • Rare (25%) - Boost +25%
 • Epic (10%) - Boost +50%
 • Legendary (5%) - Boost +100%
 
-⚡ **Utility NFT:**
+⚡ **NFT Utility:**
 • Game advantages
 • Staking multipliers
 • Governance votes
 • Exclusive tournaments
 
-🎨 **Arte:** Pixel art supereroi felini
+🎨 **Art:** Pixel art superhero cats
 🚀 **Mint:** Q2 2025
         """
         
@@ -1073,82 +1012,89 @@ Sviluppatori specializzati in Web3 gaming
     @handle_errors
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = update.message.text.lower()
-        user_id = update.effective_user.id
-        user_name = update.effective_user.first_name or "Eroe"
+        user_name = update.effective_user.first_name or "Hero"
         
-        # Parole chiave per il gioco
-        game_words = ['gioco', 'game', 'play', 'giocare', 'gioca', 'adventure', 'avventura', 'punteggio', 'score', 'classifica', 'leaderboard', 'stats']
+        # Game keywords
+        game_words = ['game', 'play', 'adventure', 'score', 'leaderboard', 'stats']
         
         if any(word in message for word in game_words):
             responses = [
-                f"🎮 {user_name}! CaptainCat Adventure ti aspetta! Raccogli CAT coin e sconfiggi i bear market!",
-                f"🚀 Pronto per l'avventura, {user_name}? Il gioco è pieno di sorprese crypto!",
-                f"⚡ {user_name}, diventa il re della classifica! Usa /game per iniziare!"
+                f"🎮 {user_name}! CaptainCat Adventure awaits! Collect CAT coins and defeat bear markets!",
+                f"🚀 Ready for adventure, {user_name}? The game is full of crypto surprises!",
+                f"⚡ {user_name}, become the leaderboard king! Use /game to start!"
             ]
-            response = random.choice(responses) + "\n\n🎯 Usa /game per giocare subito!"
+            response = random.choice(responses) + "\n\n🎯 Use /game to play now!"
         else:
-            response = self.generate_ai_response(message, user_name, user_id)
+            response = self.generate_ai_response(message, user_name)
         
         await update.message.reply_text(response, parse_mode='Markdown')
 
-    def generate_ai_response(self, message: str, user_name: str, user_id: int) -> str:
-        # Logica esistente per le risposte AI + aggiunta delle risposte per il gioco
-        greetings = ['ciao', 'salve', 'buongiorno', 'buonasera', 'hey', 'hello', 'hi', 'hola', 'salut', 'hallo', 'guten tag']
-        price_words = ['prezzo', 'costo', 'quanto costa', 'valore', 'price', 'cost', 'precio', 'coste', 'prix', 'preis', 'kosten']
+    def generate_ai_response(self, message: str, user_name: str) -> str:
+        # AI response logic + game responses
+        greetings = ['hello', 'hi', 'hey', 'good morning', 'good evening', 'greetings']
+        price_words = ['price', 'cost', 'how much', 'value', 'worth']
         
         if any(word in message for word in greetings):
-            responses = [self.t(user_id, 'greeting_1'), self.t(user_id, 'greeting_2'), self.t(user_id, 'greeting_3')]
-            return f"🐱‍🦸 {user_name}! " + random.choice(responses) + "\n\n🎮 Non dimenticare di provare CaptainCat Adventure Game!"
+            responses = [
+                "🐱‍🦸 Hello hero! Welcome to CaptainCat community! How can I help you today?",
+                "🚀 Meow! I'm CaptainCat AI, your feline crypto assistant! What do you want to know?",
+                "⚡ Greetings, future millionaire! CaptainCat is here to guide you to the moon! 🌙"
+            ]
+            return f"🐱‍🦸 {user_name}! " + random.choice(responses) + "\n\n🎮 Don't forget to try CaptainCat Adventure Game!"
         elif any(word in message for word in price_words):
-            responses = [self.t(user_id, 'price_1'), self.t(user_id, 'price_2'), self.t(user_id, 'price_3')]
-            return "💎 " + random.choice(responses) + "\n\n🚀 Usa /presale per tutti i dettagli!"
+            responses = [
+                "💎 CaptainCat price is constantly evolving! We're still in presale phase.",
+                "📈 During presale, every token is worth gold! Get ready for takeoff! 🚀",
+                "🎯 The real value of CaptainCat will be seen after DEX listing!"
+            ]
+            return "💎 " + random.choice(responses) + "\n\n🚀 Use /presale for all details!"
         else:
             responses = [
-                self.t(user_id, 'default_1').format(user_name),
-                self.t(user_id, 'default_2').format(user_name),
-                self.t(user_id, 'default_3').format(user_name),
-                self.t(user_id, 'default_4').format(user_name)
+                f"Interesting question, {user_name}! I'm here to help you with everything about CaptainCat!",
+                f"{user_name}, use /help to see all available commands!",
+                f"Hello {user_name}! Tell me what you want to know about CaptainCat and I'll answer right away!",
+                f"{user_name}, I'm CaptainCat AI! I can answer any question about the project!"
             ]
-            return random.choice(responses) + f"\n\n❓ {self.t(user_id, 'try_commands')}"
+            return random.choice(responses) + f"\n\n❓ Try commands like: /price, /roadmap, /presale"
 
     async def initialize_database(self):
-        """Inizializza il database all'avvio"""
+        """Initialize database on startup"""
         await self.db.init_pool()
 
     def run(self):
-        print("🐱‍🦸 CaptainCat Bot with Fixed Error Handling starting on Render...")
+        print("🐱‍🦸 CaptainCat Bot (English Only) starting on Render...")
         
-        # Inizializza database
+        # Initialize database
         async def startup():
             await self.initialize_database()
             logger.info("Database initialized for game features")
         
-        # Esegui startup con gestione moderna di asyncio
+        # Run startup with modern asyncio handling
         try:
-            # Usa new_event_loop per evitare deprecation warning
+            # Use new_event_loop to avoid deprecation warning
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(startup())
         except Exception as e:
             logger.error(f"Startup error: {e}")
         
-        # Configurazioni per stabilità
+        # Stability configurations
         self.app.run_polling(
             drop_pending_updates=True,
             allowed_updates=["message", "callback_query"],
             poll_interval=1.0,
             timeout=10,
-            close_loop=False  # Evita problemi con multiple instances
+            close_loop=False  # Avoid issues with multiple instances
         )
 
-# Script principale
+# Main script
 if __name__ == "__main__":
     BOT_TOKEN = os.getenv('BOT_TOKEN')
     
     if not BOT_TOKEN:
-        print("❌ ERRORE: Variabile BOT_TOKEN non trovata!")
-        print("💡 Configura la variabile d'ambiente BOT_TOKEN su Render")
+        print("❌ ERROR: BOT_TOKEN environment variable not found!")
+        print("💡 Configure BOT_TOKEN environment variable on Render")
     else:
-        print(f"🚀 Starting CaptainCat Bot with Fixed Error Handling...")
+        print(f"🚀 Starting CaptainCat Bot (English Only)...")
         bot = CaptainCatBot(BOT_TOKEN)
         bot.run()
