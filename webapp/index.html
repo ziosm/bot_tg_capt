@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CaptainCat Adventure</title>
+    <title>CaptainCat Adventure - Edizione Speciale</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Orbitron:wght@400;700;900&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -12,58 +14,107 @@
         }
 
         body {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            font-family: 'Fredoka One', cursive;
             overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            position: relative;
+        }
+
+        /* Stelle animate */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
         }
 
         #gameContainer {
             position: relative;
             width: 100%;
-            max-width: 800px;
-            height: 600px;
-            border: 3px solid #ffd700;
-            border-radius: 15px;
+            max-width: 900px;
+            height: 650px;
+            border: 4px solid #ffd700;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            box-shadow: 
+                0 0 40px rgba(255, 215, 0, 0.8),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+                        linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%);
+            background-size: 20px 20px;
         }
 
         #gameCanvas {
             display: block;
-            background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 60%, #228B22 60%, #32CD32 100%);
+            background: linear-gradient(180deg, 
+                #87CEEB 0%, 
+                #98E4FF 30%, 
+                #87CEEB 60%, 
+                #90EE90 60%, 
+                #32CD32 80%, 
+                #228B22 100%);
         }
 
         #ui {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 15px;
+            left: 15px;
             color: white;
-            font-weight: bold;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
             z-index: 100;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid #ffd700;
+            backdrop-filter: blur(10px);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+        }
+
+        #ui div {
+            margin: 5px 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #ui .icon {
+            font-size: 18px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         #controls {
             position: absolute;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             display: none;
-            gap: 10px;
+            gap: 15px;
             z-index: 100;
         }
 
         .control-btn {
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid #333;
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            border: 3px solid #333;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
             font-weight: bold;
             color: #333;
             cursor: pointer;
@@ -71,13 +122,37 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transition: all 0.1s;
+            box-shadow: 
+                0 6px 12px rgba(0,0,0,0.4),
+                inset 0 2px 4px rgba(255,255,255,0.8);
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, transparent 70%);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            transform: translate(-50%, -50%);
         }
 
         .control-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.7);
+            transform: scale(0.9);
+            box-shadow: 
+                0 3px 6px rgba(0,0,0,0.4),
+                inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .control-btn:active:before {
+            width: 100%;
+            height: 100%;
         }
 
         #gameOver {
@@ -85,14 +160,29 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 50, 0.95));
             color: white;
-            padding: 30px;
-            border-radius: 15px;
+            padding: 40px;
+            border-radius: 20px;
             text-align: center;
             display: none;
             z-index: 200;
-            border: 3px solid #ffd700;
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.8);
+            backdrop-filter: blur(15px);
+            font-family: 'Orbitron', monospace;
+        }
+
+        #gameOver h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 1);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 215, 0, 1); }
+            to { text-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 40px rgba(255, 100, 0, 0.8); }
         }
 
         #loading {
@@ -101,54 +191,118 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: #ffd700;
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             text-align: center;
             z-index: 150;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 20px;
+            border: 3px solid #ffd700;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-animation {
+            font-size: 48px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            60% { transform: translateY(-10px); }
         }
 
         .restart-btn {
-            background: #4CAF50;
+            background: linear-gradient(145deg, #4CAF50, #45a049);
             color: white;
             border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-family: 'Fredoka One', cursive;
+            border-radius: 12px;
             cursor: pointer;
-            margin-top: 15px;
-            transition: background 0.3s;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
 
         .restart-btn:hover {
-            background: #45a049;
+            background: linear-gradient(145deg, #45a049, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
         }
 
-        /* Mobile optimizations */
+        /* Effetti speciali */
+        .sparkle {
+            position: absolute;
+            pointer-events: none;
+            animation: sparkleAnim 1s ease-out forwards;
+        }
+
+        @keyframes sparkleAnim {
+            0% { opacity: 1; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.5) rotate(180deg); }
+            100% { opacity: 0; transform: scale(0) rotate(360deg); }
+        }
+
+        .combo-flash {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 1);
+            animation: comboFlash 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 150;
+        }
+
+        @keyframes comboFlash {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        /* Mobile ottimizzato */
         @media (max-width: 768px) {
             #gameContainer {
-                height: 70vh;
+                height: 80vh;
                 max-width: 95vw;
+                margin: 10px;
             }
             
             #controls {
                 display: flex;
             }
+
+            #ui {
+                font-size: 12px;
+                padding: 10px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Stelle di sfondo -->
+    <div class="stars-container"></div>
+
     <div id="gameContainer">
         <div id="loading">
-            🐱🚀<br>
-            Caricamento CaptainCat Adventure...
+            <div class="loading-animation">🐱🚀✨</div>
+            <br>
+            Caricamento CaptainCat Adventure...<br>
+            <small>Preparati per l'avventura!</small>
         </div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas" width="900" height="650"></canvas>
         <div id="ui">
-            <div>Score: <span id="score">0</span></div>
-            <div>Lives: <span id="lives">3</span></div>
-            <div>Level: <span id="level">1</span></div>
-            <div>Combo: <span id="combo">0</span>x</div>
-            <div id="grade">ROOKIE TRADER</div>
+            <div><span class="icon">🏆</span>Score: <span id="score">0</span></div>
+            <div><span class="icon">💖</span>Vite: <span id="lives">3</span></div>
+            <div><span class="icon">🎯</span>Livello: <span id="level">1</span></div>
+            <div><span class="icon">⚡</span>Combo: <span id="combo">0</span>x</div>
+            <div><span class="icon">🎖️</span><span id="grade">ROOKIE TRADER</span></div>
         </div>
         <div id="controls">
             <div class="control-btn" id="leftBtn">←</div>
@@ -156,17 +310,32 @@
             <div class="control-btn" id="rightBtn">→</div>
         </div>
         <div id="gameOver">
-            <h2>🎯 Game Over!</h2>
+            <h2>🎯 Game Over Fratello!</h2>
             <div id="finalStats"></div>
-            <button class="restart-btn" onclick="restartGame()">Play Again</button>
+            <button class="restart-btn" onclick="restartGame()">🔄 Riprova!</button>
         </div>
     </div>
 
     <script>
+        // Crea stelle di sfondo
+        function createStars() {
+            const container = document.querySelector('.stars-container');
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = star.style.height = (Math.random() * 3 + 1) + 'px';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(star);
+            }
+        }
+        createStars();
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Resize canvas to fit container
+        // Resize canvas per adattarlo al container
         function resizeCanvas() {
             const container = document.getElementById('gameContainer');
             const rect = container.getBoundingClientRect();
@@ -177,33 +346,38 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Game variables
+        // Variabili di gioco migliorate
         let gameState = 'loading';
         let score = 0;
         let lives = 3;
         let level = 1;
         let combo = 0;
         let comboTimer = 0;
+        let maxCombo = 0;
         let keys = {};
         let particles = [];
         let powerups = [];
+        let backgroundElements = [];
+        let screenShake = 0;
+        let comboMultiplier = 1;
 
-        // Player object
+        // Player migliorato
         const player = {
             x: 100,
             y: canvas.height - 150,
-            width: 40,
-            height: 40,
+            width: 45,
+            height: 45,
             velocityX: 0,
             velocityY: 0,
-            speed: 5,
-            jumpPower: 15,
+            speed: 6,
+            jumpPower: 16,
             onGround: false,
             direction: 1,
             animFrame: 0,
             invulnerable: 0,
             hasSpeedBoost: 0,
-            hasJumpBoost: 0
+            hasJumpBoost: 0,
+            trail: []
         };
 
         // Game objects arrays
@@ -211,81 +385,114 @@
         let coins = [];
         let enemies = [];
 
-        // Grades system
+        // Sistema di gradi migliorato
         const grades = [
-            { name: "ROOKIE TRADER", min: 0, emoji: "🌱" },
-            { name: "CAT HERO", min: 1000, emoji: "🐱" },
-            { name: "BULL RUNNER", min: 5000, emoji: "⚡" },
-            { name: "MOON WALKER", min: 10000, emoji: "🚀" },
-            { name: "DIAMOND HANDS", min: 25000, emoji: "💎" },
-            { name: "CRYPTO LEGEND", min: 50000, emoji: "👑" }
+            { name: "ROOKIE TRADER", min: 0, emoji: "🌱", color: "#90EE90" },
+            { name: "CAT APPRENTICE", min: 800, emoji: "🐱", color: "#FFB347" },
+            { name: "CRYPTO NINJA", min: 2000, emoji: "🥷", color: "#9370DB" },
+            { name: "BULL RUNNER", min: 5000, emoji: "⚡", color: "#FFD700" },
+            { name: "MOON WALKER", min: 10000, emoji: "🚀", color: "#00BFFF" },
+            { name: "DIAMOND HANDS", min: 25000, emoji: "💎", color: "#FF1493" },
+            { name: "CRYPTO LEGEND", min: 50000, emoji: "👑", color: "#FF6347" },
+            { name: "GALACTIC EMPEROR", min: 100000, emoji: "🌌", color: "#DA70D6" }
         ];
 
-        // Initialize game after loading
+        // Inizializza gioco dopo caricamento
         setTimeout(() => {
             document.getElementById('loading').style.display = 'none';
             gameState = 'playing';
             initLevel();
             gameLoop();
-        }, 2000);
+        }, 3000);
 
         function initLevel() {
-            // Clear arrays
+            // Pulisci arrays
             platforms = [];
             coins = [];
             enemies = [];
             powerups = [];
+            particles = [];
+            backgroundElements = [];
 
-            // Create platforms
+            // Crea piattaforme più interessanti
             platforms.push(
                 { x: 0, y: canvas.height - 50, width: canvas.width, height: 50 },
-                { x: 200, y: canvas.height - 150, width: 150, height: 20 },
-                { x: 400, y: canvas.height - 250, width: 150, height: 20 },
-                { x: 600, y: canvas.height - 180, width: 100, height: 20 },
-                { x: 100, y: canvas.height - 350, width: 120, height: 20 }
+                { x: 180, y: canvas.height - 140, width: 160, height: 20 },
+                { x: 400, y: canvas.height - 240, width: 160, height: 20 },
+                { x: 620, y: canvas.height - 170, width: 120, height: 20 },
+                { x: 80, y: canvas.height - 340, width: 140, height: 20 },
+                { x: 300, y: canvas.height - 380, width: 100, height: 20 },
+                { x: 550, y: canvas.height - 280, width: 80, height: 20 }
             );
 
-            // Create coins
-            for (let i = 0; i < 8 + level; i++) {
+            // Crea monete con varietà migliorata
+            for (let i = 0; i < 12 + level * 2; i++) {
+                const coinType = Math.random() < 0.6 ? 'normal' : 
+                               Math.random() < 0.8 ? 'bonus' : 
+                               Math.random() < 0.95 ? 'mega' : 'legendary';
+                
                 coins.push({
                     x: Math.random() * (canvas.width - 30),
-                    y: Math.random() * (canvas.height - 200) + 50,
-                    type: Math.random() < 0.7 ? 'normal' : (Math.random() < 0.8 ? 'bonus' : 'mega'),
+                    y: Math.random() * (canvas.height - 250) + 50,
+                    type: coinType,
                     collected: false,
-                    bounceY: 0
+                    bounceY: 0,
+                    glowIntensity: 0,
+                    rotationAngle: 0
                 });
             }
 
-            // Create enemies
-            for (let i = 0; i < 3 + level; i++) {
+            // Crea nemici più vari
+            for (let i = 0; i < 2 + Math.floor(level * 1.5); i++) {
+                const enemyTypes = ['bear', 'bull', 'robot', 'alien'];
+                const type = enemyTypes[Math.floor(Math.random() * (Math.min(enemyTypes.length, 2 + Math.floor(level/3))))];
+                
                 enemies.push({
                     x: Math.random() * (canvas.width - 40),
                     y: canvas.height - 100,
-                    width: 30,
-                    height: 30,
-                    velocityX: (Math.random() < 0.5 ? -1 : 1) * (1 + level * 0.2),
-                    type: Math.random() < 0.7 ? 'bear' : 'bull',
-                    defeated: false
+                    width: 35,
+                    height: 35,
+                    velocityX: (Math.random() < 0.5 ? -1 : 1) * (1.5 + level * 0.3),
+                    type: type,
+                    defeated: false,
+                    animFrame: 0,
+                    health: type === 'robot' ? 2 : type === 'alien' ? 3 : 1
                 });
             }
 
-            // Create power-ups
+            // Crea power-up migliorati
             if (level > 1) {
-                for (let i = 0; i < 2; i++) {
+                for (let i = 0; i < Math.min(4, 1 + Math.floor(level/2)); i++) {
+                    const powerupTypes = ['speed', 'jump', 'shield', 'magnet', 'multiplier'];
+                    const type = powerupTypes[Math.floor(Math.random() * Math.min(powerupTypes.length, 2 + Math.floor(level/2)))];
+                    
                     powerups.push({
                         x: Math.random() * (canvas.width - 30),
                         y: Math.random() * (canvas.height - 200) + 100,
-                        type: Math.random() < 0.5 ? 'speed' : 'jump',
-                        collected: false
+                        type: type,
+                        collected: false,
+                        pulseScale: 1
                     });
                 }
             }
 
-            // Reset player position
+            // Elementi decorativi di sfondo
+            for (let i = 0; i < 8; i++) {
+                backgroundElements.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 0.6,
+                    type: Math.random() < 0.5 ? 'cloud' : 'bird',
+                    speed: 0.5 + Math.random() * 1,
+                    size: 20 + Math.random() * 30
+                });
+            }
+
+            // Reset posizione player
             player.x = 100;
             player.y = canvas.height - 150;
             player.velocityX = 0;
             player.velocityY = 0;
+            player.trail = [];
         }
 
         function gameLoop() {
@@ -297,123 +504,204 @@
         }
 
         function update() {
-            // Player movement
+            // Movimenti player migliorati
             if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-                player.velocityX = -player.speed * (player.hasSpeedBoost > 0 ? 1.5 : 1);
+                player.velocityX = -player.speed * (player.hasSpeedBoost > 0 ? 1.8 : 1);
                 player.direction = -1;
             } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-                player.velocityX = player.speed * (player.hasSpeedBoost > 0 ? 1.5 : 1);
+                player.velocityX = player.speed * (player.hasSpeedBoost > 0 ? 1.8 : 1);
                 player.direction = 1;
             } else {
-                player.velocityX *= 0.8;
+                player.velocityX *= 0.85;
             }
 
             if ((keys['ArrowUp'] || keys['w'] || keys['W'] || keys[' ']) && player.onGround) {
-                player.velocityY = -player.jumpPower * (player.hasJumpBoost > 0 ? 1.3 : 1);
+                player.velocityY = -player.jumpPower * (player.hasJumpBoost > 0 ? 1.4 : 1);
                 player.onGround = false;
+                createJumpParticles();
             }
 
-            // Gravity
-            player.velocityY += 0.8;
+            // Gravità migliorata
+            player.velocityY += 0.7;
+            if (player.velocityY > 15) player.velocityY = 15;
 
-            // Update position
+            // Aggiorna posizione
             player.x += player.velocityX;
             player.y += player.velocityY;
 
-            // Boundary checks
+            // Trail del player
+            if (Math.abs(player.velocityX) > 2 || player.hasSpeedBoost > 0) {
+                player.trail.push({
+                    x: player.x + player.width/2,
+                    y: player.y + player.height/2,
+                    alpha: 1
+                });
+                if (player.trail.length > 8) player.trail.shift();
+            }
+
+            // Aggiorna trail
+            player.trail.forEach(t => t.alpha -= 0.15);
+            player.trail = player.trail.filter(t => t.alpha > 0);
+
+            // Controlli confini
             if (player.x < 0) player.x = 0;
             if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
 
-            // Platform collision
+            // Collisioni piattaforme miglorate
             player.onGround = false;
             for (let platform of platforms) {
                 if (player.x < platform.x + platform.width &&
                     player.x + player.width > platform.x &&
                     player.y + player.height > platform.y &&
-                    player.y + player.height < platform.y + platform.height + 10) {
+                    player.y + player.height < platform.y + platform.height + 12) {
                     if (player.velocityY >= 0) {
                         player.y = platform.y - player.height;
                         player.velocityY = 0;
                         player.onGround = true;
+                        
+                        if (Math.abs(player.velocityX) > 4) {
+                            createLandingParticles();
+                        }
                     }
                 }
             }
 
-            // Death check
+            // Controllo morte
             if (player.y > canvas.height) {
                 loseLife();
             }
 
-            // Coin collection
+            // Raccolta monete migliorata
             coins.forEach(coin => {
-                if (!coin.collected &&
-                    player.x < coin.x + 25 &&
-                    player.x + player.width > coin.x &&
-                    player.y < coin.y + 25 &&
-                    player.y + player.height > coin.y) {
-                    coin.collected = true;
+                if (!coin.collected) {
+                    coin.bounceY = Math.sin(Date.now() * 0.008 + coin.x * 0.1) * 8;
+                    coin.glowIntensity = Math.sin(Date.now() * 0.01) * 0.5 + 0.5;
+                    coin.rotationAngle += 0.05;
                     
-                    let points = coin.type === 'normal' ? 100 : 
-                                coin.type === 'bonus' ? 200 : 500;
+                    const distance = Math.sqrt(
+                        Math.pow(player.x + player.width/2 - coin.x - 12.5, 2) +
+                        Math.pow(player.y + player.height/2 - coin.y - 12.5, 2)
+                    );
                     
-                    score += points * Math.max(1, combo);
-                    combo++;
-                    comboTimer = 180; // 3 seconds at 60fps
-                    
-                    createParticles(coin.x, coin.y, coin.type);
-                }
-                coin.bounceY = Math.sin(Date.now() * 0.01) * 5;
-            });
-
-            // Power-up collection
-            powerups.forEach(powerup => {
-                if (!powerup.collected &&
-                    player.x < powerup.x + 25 &&
-                    player.x + player.width > powerup.x &&
-                    player.y < powerup.y + 25 &&
-                    player.y + player.height > powerup.y) {
-                    powerup.collected = true;
-                    
-                    if (powerup.type === 'speed') {
-                        player.hasSpeedBoost = 300; // 5 seconds
-                    } else {
-                        player.hasJumpBoost = 300;
+                    if (distance < 35) {
+                        coin.collected = true;
+                        
+                        const points = {
+                            normal: 100,
+                            bonus: 250,
+                            mega: 500,
+                            legendary: 1000
+                        };
+                        
+                        const basePoints = points[coin.type] || 100;
+                        const totalPoints = basePoints * Math.max(1, combo) * comboMultiplier;
+                        
+                        score += totalPoints;
+                        combo++;
+                        if (combo > maxCombo) maxCombo = combo;
+                        comboTimer = 200;
+                        
+                        createCoinParticles(coin.x, coin.y, coin.type);
+                        showComboFlash(totalPoints);
+                        
+                        if (combo % 10 === 0) {
+                            screenShake = 10;
+                            comboMultiplier = Math.min(5, comboMultiplier + 0.5);
+                        }
                     }
-                    
-                    createParticles(powerup.x, powerup.y, 'powerup');
                 }
             });
 
-            // Enemy collision and movement
+            // Raccolta power-up migliorata
+            powerups.forEach(powerup => {
+                if (!powerup.collected) {
+                    powerup.pulseScale = 1 + Math.sin(Date.now() * 0.01) * 0.2;
+                    
+                    if (player.x < powerup.x + 25 &&
+                        player.x + player.width > powerup.x &&
+                        player.y < powerup.y + 25 &&
+                        player.y + player.height > powerup.y) {
+                        powerup.collected = true;
+                        
+                        switch (powerup.type) {
+                            case 'speed':
+                                player.hasSpeedBoost = 400;
+                                break;
+                            case 'jump':
+                                player.hasJumpBoost = 400;
+                                break;
+                            case 'shield':
+                                player.invulnerable = Math.max(player.invulnerable, 300);
+                                break;
+                            case 'magnet':
+                                // Attira tutte le monete vicine
+                                coins.forEach(coin => {
+                                    if (!coin.collected) {
+                                        const distance = Math.sqrt(
+                                            Math.pow(player.x - coin.x, 2) + 
+                                            Math.pow(player.y - coin.y, 2)
+                                        );
+                                        if (distance < 150) {
+                                            coin.collected = true;
+                                            score += 50 * combo;
+                                            createCoinParticles(coin.x, coin.y, 'normal');
+                                        }
+                                    }
+                                });
+                                break;
+                            case 'multiplier':
+                                comboMultiplier = Math.min(10, comboMultiplier + 2);
+                                break;
+                        }
+                        
+                        createPowerupParticles(powerup.x, powerup.y, powerup.type);
+                        screenShake = 8;
+                    }
+                }
+            });
+
+            // Nemici migliorati
             enemies.forEach(enemy => {
                 if (!enemy.defeated) {
                     enemy.x += enemy.velocityX;
+                    enemy.animFrame += 0.1;
                     
                     if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.width) {
                         enemy.velocityX *= -1;
                     }
                     
-                    // Player collision
-                    if (player.invulnerable <= 0 &&
-                        player.x < enemy.x + enemy.width &&
+                    // Collisione player
+                    if (player.x < enemy.x + enemy.width &&
                         player.x + player.width > enemy.x &&
                         player.y < enemy.y + enemy.height &&
                         player.y + player.height > enemy.y) {
                         
-                        // Check if player is falling on enemy
                         if (player.velocityY > 0 && player.y < enemy.y - 10) {
-                            enemy.defeated = true;
-                            player.velocityY = -8; // Bounce
-                            score += enemy.type === 'bear' ? 200 : 300;
-                            createParticles(enemy.x, enemy.y, 'enemy');
-                        } else {
+                            // Salta sul nemico
+                            enemy.health--;
+                            if (enemy.health <= 0) {
+                                enemy.defeated = true;
+                                const points = {
+                                    bear: 200,
+                                    bull: 300,
+                                    robot: 500,
+                                    alien: 750
+                                };
+                                score += points[enemy.type] * combo;
+                                createEnemyParticles(enemy.x, enemy.y, enemy.type);
+                                screenShake = 12;
+                            }
+                            player.velocityY = -10;
+                            combo++;
+                            comboTimer = 200;
+                        } else if (player.invulnerable <= 0) {
                             loseLife();
                         }
                     }
                 }
             });
 
-            // Update timers
+            // Aggiorna timer e effetti
             if (player.invulnerable > 0) player.invulnerable--;
             if (player.hasSpeedBoost > 0) player.hasSpeedBoost--;
             if (player.hasJumpBoost > 0) player.hasJumpBoost--;
@@ -421,283 +709,765 @@
                 comboTimer--;
             } else {
                 combo = 0;
+                comboMultiplier = Math.max(1, comboMultiplier - 0.1);
             }
 
-            // Update particles
+            if (screenShake > 0) screenShake--;
+
+            // Aggiorna particelle
             particles = particles.filter(particle => {
                 particle.x += particle.velocityX;
                 particle.y += particle.velocityY;
+                particle.velocityY += particle.gravity || 0;
                 particle.life--;
-                return particle.life > 0;
+                particle.scale = Math.max(0, particle.scale - 0.02);
+                return particle.life > 0 && particle.scale > 0;
             });
 
-            // Animation frame
-            player.animFrame += 0.2;
+            // Aggiorna elementi di sfondo
+            backgroundElements.forEach(element => {
+                element.x += element.speed;
+                if (element.x > canvas.width + element.size) {
+                    element.x = -element.size;
+                    element.y = Math.random() * canvas.height * 0.6;
+                }
+            });
 
-            // Level completion check
+            // Frame animazione
+            player.animFrame += 0.15;
+
+            // Controllo completamento livello
             if (coins.every(coin => coin.collected) && enemies.every(enemy => enemy.defeated)) {
                 nextLevel();
             }
 
-            // Update UI
+            // Aggiorna UI
             updateUI();
         }
 
         function draw() {
-            // Clear canvas with gradient background
+            // Salva contesto per screen shake
+            ctx.save();
+            
+            if (screenShake > 0) {
+                ctx.translate(
+                    (Math.random() - 0.5) * screenShake,
+                    (Math.random() - 0.5) * screenShake
+                );
+            }
+
+            // Sfondo gradiente migliorato
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
             gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.3, '#98E4FF');
             gradient.addColorStop(0.6, '#87CEEB');
-            gradient.addColorStop(0.6, '#228B22');
-            gradient.addColorStop(1, '#32CD32');
+            gradient.addColorStop(0.6, '#90EE90');
+            gradient.addColorStop(0.8, '#32CD32');
+            gradient.addColorStop(1, '#228B22');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw clouds
-            drawClouds();
+            // Disegna elementi di sfondo
+            drawBackgroundElements();
 
-            // Draw platforms
-            ctx.fillStyle = '#8B4513';
-            platforms.forEach(platform => {
-                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
-                ctx.fillStyle = '#228B22';
-                ctx.fillRect(platform.x, platform.y, platform.width, 5);
-                ctx.fillStyle = '#8B4513';
+            // Disegna nuvole animate
+            drawAnimatedClouds();
+
+            // Trail del player
+            drawPlayerTrail();
+
+            // Piattaforme migliorate
+            drawPlatforms();
+
+            // Monete migliorate
+            drawCoins();
+
+            // Power-up migliorati
+            drawPowerups();
+
+            // Nemici migliorati
+            drawEnemies();
+
+            // Player migliorato
+            drawPlayer();
+
+            // Particelle
+            drawParticles();
+
+            // Effetti UI
+            drawUIEffects();
+
+            ctx.restore();
+        }
+
+        function drawBackgroundElements() {
+            backgroundElements.forEach(element => {
+                ctx.globalAlpha = 0.6;
+                if (element.type === 'cloud') {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(element.x, element.y, element.size * 0.6, 0, Math.PI * 2);
+                    ctx.arc(element.x + element.size * 0.8, element.y, element.size * 0.8, 0, Math.PI * 2);
+                    ctx.arc(element.x + element.size * 1.6, element.y, element.size * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#333';
+                    ctx.font = `${element.size}px Arial`;
+                    ctx.fillText('🦅', element.x, element.y);
+                }
+                ctx.globalAlpha = 1;
             });
+        }
 
-            // Draw coins
+        function drawAnimatedClouds() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            for (let i = 0; i < 4; i++) {
+                const x = (i * 200 + Date.now() * 0.03) % (canvas.width + 120);
+                const y = 40 + i * 25 + Math.sin(Date.now() * 0.002 + i) * 10;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 18, 0, Math.PI * 2);
+                ctx.arc(x + 22, y, 28, 0, Math.PI * 2);
+                ctx.arc(x + 44, y, 18, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawPlayerTrail() {
+            player.trail.forEach((trail, index) => {
+                ctx.globalAlpha = trail.alpha * 0.6;
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                ctx.arc(trail.x, trail.y, 8 - index, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        function drawPlatforms() {
+            platforms.forEach(platform => {
+                // Ombra
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(platform.x + 3, platform.y + 3, platform.width, platform.height);
+                
+                // Piattaforma principale
+                const gradient = ctx.createLinearGradient(0, platform.y, 0, platform.y + platform.height);
+                gradient.addColorStop(0, '#A0522D');
+                gradient.addColorStop(1, '#8B4513');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                
+                // Erba in cima
+                ctx.fillStyle = '#32CD32';
+                ctx.fillRect(platform.x, platform.y, platform.width, 6);
+                
+                // Dettagli decorativi
+                ctx.fillStyle = '#228B22';
+                for (let x = platform.x; x < platform.x + platform.width; x += 15) {
+                    ctx.fillRect(x, platform.y, 2, 4);
+                }
+            });
+        }
+
+        function drawCoins() {
             coins.forEach(coin => {
                 if (!coin.collected) {
                     const colors = {
                         normal: '#FFD700',
                         bonus: '#FF6B35',
-                        mega: '#FF1493'
+                        mega: '#FF1493',
+                        legendary: '#9400D3'
                     };
                     
+                    const size = {
+                        normal: 12,
+                        bonus: 14,
+                        mega: 16,
+                        legendary: 20
+                    };
+                    
+                    const coinSize = size[coin.type];
+                    const x = coin.x + 12.5;
+                    const y = coin.y + 12.5 + coin.bounceY;
+                    
+                    // Effetto glow
+                    ctx.shadowColor = colors[coin.type];
+                    ctx.shadowBlur = 10 + coin.glowIntensity * 10;
+                    
+                    // Rotazione
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(coin.rotationAngle);
+                    
+                    // Moneta principale
                     ctx.fillStyle = colors[coin.type];
                     ctx.beginPath();
-                    ctx.arc(coin.x + 12.5, coin.y + 12.5 + coin.bounceY, 12, 0, Math.PI * 2);
+                    ctx.arc(0, 0, coinSize, 0, Math.PI * 2);
                     ctx.fill();
                     
+                    // Bordo interno
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, coinSize - 2, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    // Simbolo
                     ctx.fillStyle = 'white';
-                    ctx.font = 'bold 12px Arial';
+                    ctx.font = `bold ${Math.floor(coinSize * 0.8)}px Arial`;
                     ctx.textAlign = 'center';
-                    ctx.fillText('CAT', coin.x + 12.5, coin.y + 17 + coin.bounceY);
+                    ctx.textBaseline = 'middle';
+                    const symbols = {
+                        normal: '$',
+                        bonus: '★',
+                        mega: '♦',
+                        legendary: '👑'
+                    };
+                    ctx.fillText(symbols[coin.type], 0, 0);
+                    
+                    ctx.restore();
+                    ctx.shadowBlur = 0;
                 }
             });
+        }
 
-            // Draw power-ups
+        function drawPowerups() {
             powerups.forEach(powerup => {
                 if (!powerup.collected) {
-                    ctx.fillStyle = powerup.type === 'speed' ? '#00FF00' : '#0000FF';
-                    ctx.fillRect(powerup.x, powerup.y, 25, 25);
+                    const colors = {
+                        speed: '#00FF00',
+                        jump: '#0080FF',
+                        shield: '#FF8C00',
+                        magnet: '#FF1493',
+                        multiplier: '#9400D3'
+                    };
                     
-                    ctx.fillStyle = 'white';
-                    ctx.font = 'bold 14px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(powerup.type === 'speed' ? '⚡' : '↑', powerup.x + 12.5, powerup.y + 17);
-                }
-            });
-
-            // Draw enemies
-            enemies.forEach(enemy => {
-                if (!enemy.defeated) {
-                    ctx.fillStyle = enemy.type === 'bear' ? '#8B0000' : '#006400';
-                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    const x = powerup.x + 12.5;
+                    const y = powerup.y + 12.5;
                     
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.scale(powerup.pulseScale, powerup.pulseScale);
+                    
+                    // Effetto glow
+                    ctx.shadowColor = colors[powerup.type];
+                    ctx.shadowBlur = 15;
+                    
+                    // Forma del power-up
+                    ctx.fillStyle = colors[powerup.type];
+                    ctx.fillRect(-12, -12, 24, 24);
+                    
+                    // Bordo
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(-12, -12, 24, 24);
+                    
+                    // Icona
                     ctx.fillStyle = 'white';
                     ctx.font = 'bold 16px Arial';
                     ctx.textAlign = 'center';
-                    ctx.fillText(enemy.type === 'bear' ? '🐻' : '🐂', enemy.x + 15, enemy.y + 22);
+                    ctx.textBaseline = 'middle';
+                    const icons = {
+                        speed: '⚡',
+                        jump: '↑',
+                        shield: '🛡️',
+                        magnet: '🧲',
+                        multiplier: '×'
+                    };
+                    ctx.fillText(icons[powerup.type], 0, 0);
+                    
+                    ctx.restore();
+                    ctx.shadowBlur = 0;
                 }
             });
+        }
 
-            // Draw player (CaptainCat)
-            drawPlayer();
-
-            // Draw particles
-            particles.forEach(particle => {
-                ctx.fillStyle = particle.color;
-                ctx.globalAlpha = particle.life / 30;
-                ctx.fillRect(particle.x, particle.y, 4, 4);
-                ctx.globalAlpha = 1;
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                if (!enemy.defeated) {
+                    const colors = {
+                        bear: '#8B0000',
+                        bull: '#006400',
+                        robot: '#696969',
+                        alien: '#9400D3'
+                    };
+                    
+                    // Ombra
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(enemy.x + 2, enemy.y + enemy.height, enemy.width, 5);
+                    
+                    // Corpo nemico
+                    ctx.fillStyle = colors[enemy.type];
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    
+                    // Effetti speciali per tipo
+                    if (enemy.type === 'robot') {
+                        ctx.fillStyle = '#FF0000';
+                        ctx.fillRect(enemy.x + 5, enemy.y + 5, 6, 3);
+                    } else if (enemy.type === 'alien') {
+                        ctx.fillStyle = '#00FF00';
+                        ctx.beginPath();
+                        ctx.arc(enemy.x + enemy.width/2, enemy.y + 8, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // Emoji
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 18px Arial';
+                    ctx.textAlign = 'center';
+                    const emojis = {
+                        bear: '🐻',
+                        bull: '🐂',
+                        robot: '🤖',
+                        alien: '👽'
+                    };
+                    ctx.fillText(emojis[enemy.type], enemy.x + enemy.width/2, enemy.y + 25);
+                    
+                    // Barra vita per nemici resistenti
+                    if (enemy.type === 'robot' || enemy.type === 'alien') {
+                        const maxHealth = enemy.type === 'robot' ? 2 : 3;
+                        const healthWidth = (enemy.health / maxHealth) * enemy.width;
+                        
+                        ctx.fillStyle = 'red';
+                        ctx.fillRect(enemy.x, enemy.y - 8, enemy.width, 4);
+                        ctx.fillStyle = 'green';
+                        ctx.fillRect(enemy.x, enemy.y - 8, healthWidth, 4);
+                    }
+                }
             });
-
-            // Draw combo indicator
-            if (combo > 1) {
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
-                ctx.fillRect(canvas.width / 2 - 50, 50, 100, 30);
-                ctx.fillStyle = 'black';
-                ctx.font = 'bold 16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(`COMBO x${combo}`, canvas.width / 2, 70);
-            }
-
-            // Draw power-up indicators
-            let indicatorY = 100;
-            if (player.hasSpeedBoost > 0) {
-                ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
-                ctx.fillRect(10, indicatorY, 100, 20);
-                ctx.fillStyle = 'white';
-                ctx.font = '12px Arial';
-                ctx.textAlign = 'left';
-                ctx.fillText('⚡ SPEED BOOST', 15, indicatorY + 14);
-                indicatorY += 25;
-            }
-            if (player.hasJumpBoost > 0) {
-                ctx.fillStyle = 'rgba(0, 0, 255, 0.8)';
-                ctx.fillRect(10, indicatorY, 100, 20);
-                ctx.fillStyle = 'white';
-                ctx.font = '12px Arial';
-                ctx.textAlign = 'left';
-                ctx.fillText('↑ JUMP BOOST', 15, indicatorY + 14);
-            }
         }
 
         function drawPlayer() {
-            // Invulnerability flashing
+            // Invulnerabilità lampeggiante
             if (player.invulnerable > 0 && Math.floor(player.invulnerable / 5) % 2) {
-                return;
+                ctx.globalAlpha = 0.5;
             }
 
             ctx.save();
             ctx.translate(player.x + player.width/2, player.y + player.height/2);
             if (player.direction === -1) ctx.scale(-1, 1);
 
-            // Body (with Captain America colors)
-            ctx.fillStyle = '#0052CC';
-            ctx.fillRect(-15, -10, 30, 25);
+            // Effetto velocità
+            if (player.hasSpeedBoost > 0) {
+                ctx.shadowColor = '#00FF00';
+                ctx.shadowBlur = 20;
+            }
 
-            // Shield/chest emblem
+            // Corpo principale (stile Captain America)
+            const gradient = ctx.createLinearGradient(0, -20, 0, 20);
+            gradient.addColorStop(0, '#004080');
+            gradient.addColorStop(1, '#0052CC');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-18, -12, 36, 28);
+
+            // Stemma sul petto (stella)
             ctx.fillStyle = '#FF0000';
             ctx.beginPath();
-            ctx.arc(0, -5, 8, 0, Math.PI * 2);
+            ctx.arc(0, -8, 10, 0, Math.PI * 2);
             ctx.fill();
             
             ctx.fillStyle = 'white';
             ctx.beginPath();
-            ctx.arc(0, -5, 6, 0, Math.PI * 2);
+            ctx.arc(0, -8, 8, 0, Math.PI * 2);
             ctx.fill();
             
+            // Stella
             ctx.fillStyle = '#0052CC';
-            ctx.beginPath();
-            ctx.arc(0, -5, 4, 0, Math.PI * 2);
-            ctx.fill();
+            drawStar(0, -8, 5, 5, 3);
 
-            // Head
+            // Testa del gatto
             ctx.fillStyle = '#FFA500';
             ctx.beginPath();
-            ctx.arc(0, -25, 12, 0, Math.PI * 2);
+            ctx.arc(0, -28, 14, 0, Math.PI * 2);
             ctx.fill();
 
-            // Cat ears
+            // Orecchie da gatto con animazione
             ctx.fillStyle = '#FF8C00';
+            const earOffset = Math.sin(player.animFrame) * 2;
             ctx.beginPath();
-            ctx.moveTo(-8, -32);
-            ctx.lineTo(-4, -40);
-            ctx.lineTo(0, -32);
+            ctx.moveTo(-10, -35 + earOffset);
+            ctx.lineTo(-5, -42);
+            ctx.lineTo(0, -35 + earOffset);
             ctx.fill();
             
             ctx.beginPath();
-            ctx.moveTo(8, -32);
-            ctx.lineTo(4, -40);
-            ctx.lineTo(0, -32);
+            ctx.moveTo(10, -35 + earOffset);
+            ctx.lineTo(5, -42);
+            ctx.lineTo(0, -35 + earOffset);
             ctx.fill();
 
-            // Eyes
+            // Occhi
             ctx.fillStyle = 'black';
-            ctx.fillRect(-4, -27, 2, 2);
-            ctx.fillRect(2, -27, 2, 2);
+            ctx.fillRect(-6, -30, 3, 3);
+            ctx.fillRect(3, -30, 3, 3);
 
-            // Cape (when moving fast)
-            if (Math.abs(player.velocityX) > 3 || player.hasSpeedBoost > 0) {
-                ctx.fillStyle = '#FF0000';
-                ctx.fillRect(-25, -15, 10, 20);
+            // Naso
+            ctx.fillStyle = '#FF69B4';
+            ctx.beginPath();
+            ctx.arc(0, -26, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mantello dinamico
+            if (Math.abs(player.velocityX) > 3 || player.hasSpeedBoost > 0 || !player.onGround) {
+                ctx.fillStyle = '#DC143C';
+                const capeFlow = Math.sin(player.animFrame * 2) * 10;
+                ctx.beginPath();
+                ctx.moveTo(-25, -18);
+                ctx.lineTo(-30 + capeFlow, -15);
+                ctx.lineTo(-28 + capeFlow, 5);
+                ctx.lineTo(-35 + capeFlow, 15);
+                ctx.lineTo(-20, 10);
+                ctx.fill();
             }
 
-            // Legs
+            // Gambe con animazione corsa
             ctx.fillStyle = '#0052CC';
-            ctx.fillRect(-8, 15, 6, 15);
-            ctx.fillRect(2, 15, 6, 15);
+            if (Math.abs(player.velocityX) > 1) {
+                const legSwing = Math.sin(player.animFrame * 3) * 15;
+                ctx.save();
+                ctx.rotate((legSwing * Math.PI) / 180);
+                ctx.fillRect(-6, 16, 5, 12);
+                ctx.restore();
+                
+                ctx.save();
+                ctx.rotate((-legSwing * Math.PI) / 180);
+                ctx.fillRect(1, 16, 5, 12);
+                ctx.restore();
+            } else {
+                ctx.fillRect(-6, 16, 5, 12);
+                ctx.fillRect(1, 16, 5, 12);
+            }
 
-            // Arms with animation
+            // Braccia con animazione
             ctx.fillStyle = '#FFA500';
-            const armSwing = Math.sin(player.animFrame) * 0.3;
+            const armSwing = Math.sin(player.animFrame * 2) * 0.4;
             ctx.save();
             ctx.rotate(armSwing);
-            ctx.fillRect(-18, -5, 8, 4);
+            ctx.fillRect(-22, -8, 10, 5);
             ctx.restore();
             
             ctx.save();
             ctx.rotate(-armSwing);
-            ctx.fillRect(10, -5, 8, 4);
+            ctx.fillRect(12, -8, 10, 5);
             ctx.restore();
 
+            // Effetto salto boost
+            if (player.hasJumpBoost > 0) {
+                ctx.strokeStyle = '#0080FF';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
             ctx.restore();
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
         }
 
-        function drawClouds() {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            for (let i = 0; i < 3; i++) {
-                const x = (i * 250 + Date.now() * 0.02) % (canvas.width + 100);
-                const y = 50 + i * 30;
+        function drawStar(x, y, outerRadius, innerRadius, points) {
+            ctx.beginPath();
+            for (let i = 0; i < points * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (i * Math.PI) / points;
+                const px = x + radius * Math.cos(angle - Math.PI / 2);
+                const py = y + radius * Math.sin(angle - Math.PI / 2);
                 
-                ctx.beginPath();
-                ctx.arc(x, y, 20, 0, Math.PI * 2);
-                ctx.arc(x + 25, y, 30, 0, Math.PI * 2);
-                ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
-                ctx.fill();
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawParticles() {
+            particles.forEach(particle => {
+                ctx.save();
+                ctx.globalAlpha = particle.life / 60;
+                ctx.translate(particle.x, particle.y);
+                ctx.scale(particle.scale, particle.scale);
+                
+                if (particle.type === 'sparkle') {
+                    ctx.fillStyle = particle.color;
+                    drawStar(0, 0, 4, 2, 5);
+                } else {
+                    ctx.fillStyle = particle.color;
+                    ctx.fillRect(-2, -2, 4, 4);
+                }
+                
+                ctx.restore();
+            });
+        }
+
+        function drawUIEffects() {
+            // Indicatori power-up migliorati
+            let indicatorY = 120;
+            const activeEffects = [];
+            
+            if (player.hasSpeedBoost > 0) {
+                activeEffects.push({
+                    text: '⚡ VELOCITÀ POTENZIATA',
+                    color: '#00FF00',
+                    time: player.hasSpeedBoost
+                });
+            }
+            
+            if (player.hasJumpBoost > 0) {
+                activeEffects.push({
+                    text: '↑ SALTO POTENZIATO',
+                    color: '#0080FF',
+                    time: player.hasJumpBoost
+                });
+            }
+            
+            if (player.invulnerable > 0) {
+                activeEffects.push({
+                    text: '🛡️ SCUDO ATTIVO',
+                    color: '#FF8C00',
+                    time: player.invulnerable
+                });
+            }
+
+            activeEffects.forEach(effect => {
+                const width = 180;
+                const height = 25;
+                const timeRatio = effect.time / 400;
+                
+                // Barra di sfondo
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(10, indicatorY, width, height);
+                
+                // Barra di progresso
+                ctx.fillStyle = effect.color;
+                ctx.fillRect(10, indicatorY, width * timeRatio, height);
+                
+                // Bordo
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(10, indicatorY, width, height);
+                
+                // Testo
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Orbitron';
+                ctx.textAlign = 'left';
+                ctx.fillText(effect.text, 15, indicatorY + 17);
+                
+                indicatorY += 30;
+            });
+
+            // Combo mega flash
+            if (combo > 1) {
+                const comboWidth = 140;
+                const comboHeight = 40;
+                const comboX = (canvas.width - comboWidth) / 2;
+                const comboY = 60;
+                
+                // Effetto glow
+                ctx.shadowColor = '#FFD700';
+                ctx.shadowBlur = 20;
+                
+                ctx.fillStyle = `rgba(255, 215, 0, ${0.9 * Math.sin(Date.now() * 0.01) + 0.1})`;
+                ctx.fillRect(comboX, comboY, comboWidth, comboHeight);
+                
+                ctx.strokeStyle = '#FFA500';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(comboX, comboY, comboWidth, comboHeight);
+                
+                ctx.fillStyle = 'black';
+                ctx.font = 'bold 18px Fredoka One';
+                ctx.textAlign = 'center';
+                ctx.fillText(`COMBO x${combo}`, canvas.width / 2, comboY + 25);
+                
+                ctx.shadowBlur = 0;
+            }
+
+            // Moltiplicatore
+            if (comboMultiplier > 1) {
+                ctx.fillStyle = 'rgba(255, 20, 147, 0.8)';
+                ctx.fillRect(canvas.width - 120, 10, 110, 30);
+                
+                ctx.strokeStyle = '#FF1493';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(canvas.width - 120, 10, 110, 30);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText(`MULT x${comboMultiplier.toFixed(1)}`, canvas.width - 65, 30);
             }
         }
 
-        function createParticles(x, y, type) {
+        // Funzioni per creare particelle specifiche
+        function createJumpParticles() {
+            for (let i = 0; i < 6; i++) {
+                particles.push({
+                    x: player.x + player.width/2 + (Math.random() - 0.5) * 20,
+                    y: player.y + player.height,
+                    velocityX: (Math.random() - 0.5) * 6,
+                    velocityY: Math.random() * 3,
+                    color: '#87CEEB',
+                    life: 30,
+                    scale: 1,
+                    type: 'dust'
+                });
+            }
+        }
+
+        function createLandingParticles() {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: player.x + player.width/2 + (Math.random() - 0.5) * 30,
+                    y: player.y + player.height,
+                    velocityX: (Math.random() - 0.5) * 8,
+                    velocityY: -Math.random() * 4,
+                    gravity: 0.3,
+                    color: '#32CD32',
+                    life: 40,
+                    scale: 1,
+                    type: 'grass'
+                });
+            }
+        }
+
+        function createCoinParticles(x, y, type) {
             const colors = {
                 normal: ['#FFD700', '#FFA500'],
                 bonus: ['#FF6B35', '#FF4500'],
                 mega: ['#FF1493', '#FF69B4'],
-                enemy: ['#8B0000', '#FF0000'],
-                powerup: ['#00FF00', '#0000FF']
+                legendary: ['#9400D3', '#DA70D6']
             };
             
-            const particleColors = colors[type] || ['#FFD700', '#FFA500'];
+            const particleColors = colors[type] || colors.normal;
             
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < 12; i++) {
                 particles.push({
                     x: x + 12.5,
                     y: y + 12.5,
-                    velocityX: (Math.random() - 0.5) * 8,
-                    velocityY: (Math.random() - 0.5) * 8,
+                    velocityX: (Math.random() - 0.5) * 10,
+                    velocityY: (Math.random() - 0.5) * 10,
                     color: particleColors[Math.floor(Math.random() * particleColors.length)],
-                    life: 30
+                    life: 60,
+                    scale: 1.5,
+                    type: 'sparkle'
                 });
             }
+        }
+
+        function createPowerupParticles(x, y, type) {
+            const colors = {
+                speed: '#00FF00',
+                jump: '#0080FF',
+                shield: '#FF8C00',
+                magnet: '#FF1493',
+                multiplier: '#9400D3'
+            };
+            
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x + 12.5,
+                    y: y + 12.5,
+                    velocityX: (Math.random() - 0.5) * 12,
+                    velocityY: (Math.random() - 0.5) * 12,
+                    color: colors[type],
+                    life: 80,
+                    scale: 2,
+                    type: 'sparkle'
+                });
+            }
+        }
+
+        function createEnemyParticles(x, y, type) {
+            const colors = {
+                bear: ['#8B0000', '#FF0000'],
+                bull: ['#006400', '#32CD32'],
+                robot: ['#696969', '#C0C0C0'],
+                alien: ['#9400D3', '#DA70D6']
+            };
+            
+            const particleColors = colors[type] || colors.bear;
+            
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: x + 17.5,
+                    y: y + 17.5,
+                    velocityX: (Math.random() - 0.5) * 15,
+                    velocityY: (Math.random() - 0.5) * 15,
+                    gravity: 0.5,
+                    color: particleColors[Math.floor(Math.random() * particleColors.length)],
+                    life: 100,
+                    scale: 1.8,
+                    type: 'explosion'
+                });
+            }
+        }
+
+        function showComboFlash(points) {
+            const flash = document.createElement('div');
+            flash.className = 'combo-flash';
+            flash.textContent = `+${points}`;
+            document.getElementById('gameContainer').appendChild(flash);
+            
+            setTimeout(() => {
+                flash.remove();
+            }, 800);
         }
 
         function loseLife() {
             if (player.invulnerable > 0) return;
             
             lives--;
-            player.invulnerable = 120; // 2 seconds
+            player.invulnerable = 150;
+            screenShake = 20;
+            
+            // Effetto perdita vita
+            for (let i = 0; i < 30; i++) {
+                particles.push({
+                    x: player.x + player.width/2,
+                    y: player.y + player.height/2,
+                    velocityX: (Math.random() - 0.5) * 20,
+                    velocityY: (Math.random() - 0.5) * 20,
+                    gravity: 0.8,
+                    color: '#FF0000',
+                    life: 120,
+                    scale: 2,
+                    type: 'explosion'
+                });
+            }
             
             if (lives <= 0) {
                 gameOver();
             } else {
-                // Reset player position
+                // Reset posizione
                 player.x = 100;
                 player.y = canvas.height - 150;
                 player.velocityX = 0;
                 player.velocityY = 0;
+                combo = 0;
+                comboMultiplier = 1;
             }
         }
 
         function nextLevel() {
             level++;
-            score += 500; // Level completion bonus
+            score += 1000; // Bonus completamento livello
             
-            // Brief pause before next level
+            // Effetto completamento livello
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    velocityX: (Math.random() - 0.5) * 10,
+                    velocityY: (Math.random() - 0.5) * 10,
+                    color: ['#FFD700', '#FF6B35', '#FF1493'][Math.floor(Math.random() * 3)],
+                    life: 150,
+                    scale: 3,
+                    type: 'sparkle'
+                });
+            }
+            
             setTimeout(() => {
                 initLevel();
-            }, 1000);
+            }, 1500);
         }
 
         function gameOver() {
@@ -705,21 +1475,25 @@
             
             const finalGrade = getCurrentGrade();
             const stats = `
-                <p><strong>Final Score:</strong> ${score.toLocaleString()}</p>
-                <p><strong>Level Reached:</strong> ${level}</p>
-                <p><strong>Grade:</strong> ${finalGrade.emoji} ${finalGrade.name}</p>
-                <p><strong>Max Combo:</strong> x${combo}</p>
+                <div style="font-size: 18px; margin: 15px 0;">
+                    <p><strong>🏆 Punteggio Finale:</strong> ${score.toLocaleString()}</p>
+                    <p><strong>🎯 Livello Raggiunto:</strong> ${level}</p>
+                    <p><strong>🎖️ Grado:</strong> ${finalGrade.emoji} ${finalGrade.name}</p>
+                    <p><strong>⚡ Combo Massimo:</strong> x${maxCombo}</p>
+                    <p><strong>🔥 Moltiplicatore Max:</strong> x${comboMultiplier.toFixed(1)}</p>
+                </div>
             `;
             
             document.getElementById('finalStats').innerHTML = stats;
             document.getElementById('gameOver').style.display = 'block';
             
-            // Send score to Telegram (if in Telegram WebApp)
+            // Telegram WebApp integration
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.sendData(JSON.stringify({
                     score: score,
                     level: level,
-                    grade: finalGrade.name
+                    grade: finalGrade.name,
+                    maxCombo: maxCombo
                 }));
             }
         }
@@ -730,7 +1504,10 @@
             lives = 3;
             level = 1;
             combo = 0;
+            maxCombo = 0;
             comboTimer = 0;
+            comboMultiplier = 1;
+            screenShake = 0;
             particles = [];
             
             player.x = 100;
@@ -740,6 +1517,7 @@
             player.invulnerable = 0;
             player.hasSpeedBoost = 0;
             player.hasJumpBoost = 0;
+            player.trail = [];
             
             document.getElementById('gameOver').style.display = 'none';
             initLevel();
@@ -762,10 +1540,12 @@
             document.getElementById('combo').textContent = combo;
             
             const currentGrade = getCurrentGrade();
-            document.getElementById('grade').textContent = `${currentGrade.emoji} ${currentGrade.name}`;
+            const gradeElement = document.getElementById('grade');
+            gradeElement.textContent = `${currentGrade.emoji} ${currentGrade.name}`;
+            gradeElement.style.color = currentGrade.color;
         }
 
-        // Event listeners
+        // Event listeners migliorati
         document.addEventListener('keydown', (e) => {
             keys[e.key] = true;
             e.preventDefault();
@@ -776,22 +1556,352 @@
             e.preventDefault();
         });
 
-        // Touch controls
-        document.getElementById('leftBtn').addEventListener('touchstart', () => keys['ArrowLeft'] = true);
-        document.getElementById('leftBtn').addEventListener('touchend', () => keys['ArrowLeft'] = false);
-        document.getElementById('rightBtn').addEventListener('touchstart', () => keys['ArrowRight'] = true);
-        document.getElementById('rightBtn').addEventListener('touchend', () => keys['ArrowRight'] = false);
-        document.getElementById('jumpBtn').addEventListener('touchstart', () => keys['ArrowUp'] = true);
-        document.getElementById('jumpBtn').addEventListener('touchend', () => keys['ArrowUp'] = false);
+        // Touch controls migliorati
+        function setupTouchControl(elementId, key) {
+            const element = document.getElementById(elementId);
+            
+            element.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys[key] = true;
+                element.style.transform = 'scale(0.9)';
+            });
+            
+            element.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys[key] = false;
+                element.style.transform = 'scale(1)';
+            });
+            
+            element.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                keys[key] = false;
+                element.style.transform = 'scale(1)';
+            });
+        }
+
+        setupTouchControl('leftBtn', 'ArrowLeft');
+        setupTouchControl('rightBtn', 'ArrowRight');
+        setupTouchControl('jumpBtn', 'ArrowUp');
 
         // Prevent scrolling on mobile
-        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
 
         // Telegram WebApp integration
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             window.Telegram.WebApp.expand();
+            window.Telegram.WebApp.enableClosingConfirmation();
         }
+
+        // Audio feedback (opzionale)
+        function playSound(type) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                const frequencies = {
+                    coin: 800,
+                    powerup: 1200,
+                    enemy: 400,
+                    jump: 600,
+                    levelup: 1000
+                };
+                
+                oscillator.frequency.setValueAtTime(frequencies[type] || 500, audioContext.currentTime);
+                oscillator.type = 'square';
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                // Audio non supportato, continua senza suono
+            }
+        }
+
+        // Statistiche aggiuntive per analytics
+        let gameStats = {
+            startTime: Date.now(),
+            coinsCollected: 0,
+            enemiesDefeated: 0,
+            powerupsUsed: 0,
+            totalJumps: 0,
+            bestCombo: 0
+        };
+
+        // Override delle funzioni originali per aggiungere stats
+        const originalCoinCollection = () => {
+            gameStats.coinsCollected++;
+        };
+
+        const originalEnemyDefeat = () => {
+            gameStats.enemiesDefeated++;
+        };
+
+        const originalPowerupUse = () => {
+            gameStats.powerupsUsed++;
+        };
+
+        const originalJump = () => {
+            gameStats.totalJumps++;
+        };
+
+        // Controlli aggiuntivi da tastiera
+        document.addEventListener('keydown', (e) => {
+            // Pause con P o Escape
+            if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+                if (gameState === 'playing') {
+                    gameState = 'paused';
+                    showPauseMenu();
+                } else if (gameState === 'paused') {
+                    gameState = 'playing';
+                    hidePauseMenu();
+                    gameLoop();
+                }
+            }
+            
+            // Restart con R
+            if (e.key === 'r' || e.key === 'R') {
+                if (gameState === 'gameOver') {
+                    restartGame();
+                }
+            }
+        });
+
+        function showPauseMenu() {
+            const pauseMenu = document.createElement('div');
+            pauseMenu.id = 'pauseMenu';
+            pauseMenu.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 40px;
+                border-radius: 20px;
+                text-align: center;
+                z-index: 300;
+                border: 4px solid #ffd700;
+                font-family: 'Fredoka One', cursive;
+            `;
+            
+            pauseMenu.innerHTML = `
+                <h2 style="margin-bottom: 20px; color: #ffd700;">⏸️ PAUSA</h2>
+                <p style="margin: 10px 0;">Premi P o ESC per continuare</p>
+                <p style="margin: 10px 0;">Usa WASD o Frecce per muoverti</p>
+                <p style="margin: 10px 0;">Spazio per saltare</p>
+                <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
+                    <p>🏆 Punteggio: ${score.toLocaleString()}</p>
+                    <p>🎯 Livello: ${level}</p>
+                    <p>⚡ Combo: ${combo}</p>
+                </div>
+            `;
+            
+            document.getElementById('gameContainer').appendChild(pauseMenu);
+        }
+
+        function hidePauseMenu() {
+            const pauseMenu = document.getElementById('pauseMenu');
+            if (pauseMenu) {
+                pauseMenu.remove();
+            }
+        }
+
+        // Performance monitoring
+        let frameCount = 0;
+        let lastFPSCheck = Date.now();
+        let currentFPS = 60;
+
+        function updateFPS() {
+            frameCount++;
+            const now = Date.now();
+            if (now - lastFPSCheck >= 1000) {
+                currentFPS = frameCount;
+                frameCount = 0;
+                lastFPSCheck = now;
+                
+                // Auto-adjust particle density based on performance
+                if (currentFPS < 30) {
+                    particles = particles.slice(0, Math.floor(particles.length * 0.7));
+                }
+            }
+        }
+
+        // Override del gameLoop per includere FPS monitoring
+        const originalGameLoop = gameLoop;
+        gameLoop = function() {
+            if (gameState !== 'playing') return;
+            
+            updateFPS();
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        };
+
+        // Easter eggs e segreti
+        let secretCode = [];
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
+
+        document.addEventListener('keydown', (e) => {
+            secretCode.push(e.key);
+            if (secretCode.length > konamiCode.length) {
+                secretCode.shift();
+            }
+            
+            if (JSON.stringify(secretCode) === JSON.stringify(konamiCode)) {
+                activateSecretMode();
+                secretCode = [];
+            }
+        });
+
+        function activateSecretMode() {
+            // Modalità segreta: super poteri temporanei
+            player.hasSpeedBoost = 1000;
+            player.hasJumpBoost = 1000;
+            player.invulnerable = 500;
+            score += 10000;
+            
+            // Effetto visivo speciale
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    velocityX: (Math.random() - 0.5) * 20,
+                    velocityY: (Math.random() - 0.5) * 20,
+                    color: '#FFD700',
+                    life: 200,
+                    scale: 3,
+                    type: 'sparkle'
+                });
+            }
+            
+            showSecretMessage();
+        }
+
+        function showSecretMessage() {
+            const message = document.createElement('div');
+            message.style.cssText = `
+                position: absolute;
+                top: 30%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(45deg, #FFD700, #FFA500);
+                color: black;
+                padding: 20px;
+                border-radius: 15px;
+                text-align: center;
+                z-index: 250;
+                font-family: 'Fredoka One', cursive;
+                font-size: 18px;
+                border: 3px solid #FF6347;
+                box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            `;
+            
+            message.innerHTML = '🌟 MODALITÀ SEGRETA ATTIVATA! 🌟<br>Super poteri abilitati!';
+            document.getElementById('gameContainer').appendChild(message);
+            
+            setTimeout(() => {
+                message.remove();
+            }, 3000);
+        }
+
+        // Salvataggio del miglior punteggio (localStorage se disponibile)
+        function saveHighScore() {
+            try {
+                const highScore = localStorage.getItem('captaincat_highscore') || 0;
+                if (score > parseInt(highScore)) {
+                    localStorage.setItem('captaincat_highscore', score.toString());
+                    return true;
+                }
+            } catch (e) {
+                // localStorage non disponibile
+            }
+            return false;
+        }
+
+        function getHighScore() {
+            try {
+                return parseInt(localStorage.getItem('captaincat_highscore')) || 0;
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        // Aggiorna la funzione gameOver per includere il record
+        const originalGameOver = gameOver;
+        gameOver = function() {
+            gameState = 'gameOver';
+            
+            const isNewRecord = saveHighScore();
+            const highScore = getHighScore();
+            const finalGrade = getCurrentGrade();
+            
+            let recordText = '';
+            if (isNewRecord) {
+                recordText = '<p style="color: #FFD700; font-size: 20px; animation: glow 1s infinite;">🎉 NUOVO RECORD! 🎉</p>';
+            } else if (highScore > 0) {
+                recordText = `<p><strong>🏆 Miglior Punteggio:</strong> ${highScore.toLocaleString()}</p>`;
+            }
+            
+            const playTime = Math.floor((Date.now() - gameStats.startTime) / 1000);
+            const minutes = Math.floor(playTime / 60);
+            const seconds = playTime % 60;
+            
+            const stats = `
+                <div style="font-size: 16px; margin: 15px 0;">
+                    ${recordText}
+                    <p><strong>🏆 Punteggio Finale:</strong> ${score.toLocaleString()}</p>
+                    <p><strong>🎯 Livello Raggiunto:</strong> ${level}</p>
+                    <p><strong>🎖️ Grado:</strong> ${finalGrade.emoji} ${finalGrade.name}</p>
+                    <p><strong>⚡ Combo Massimo:</strong> x${maxCombo}</p>
+                    <p><strong>🕒 Tempo di Gioco:</strong> ${minutes}:${seconds.toString().padStart(2, '0')}</p>
+                    <hr style="margin: 15px 0; border-color: #ffd700;">
+                    <p><strong>📊 Statistiche:</strong></p>
+                    <p>💰 Monete: ${gameStats.coinsCollected} | 👹 Nemici: ${gameStats.enemiesDefeated}</p>
+                    <p>⭐ Power-up: ${gameStats.powerupsUsed} | 🦘 Salti: ${gameStats.totalJumps}</p>
+                </div>
+            `;
+            
+            document.getElementById('finalStats').innerHTML = stats;
+            document.getElementById('gameOver').style.display = 'block';
+            
+            // Reset statistiche
+            gameStats = {
+                startTime: Date.now(),
+                coinsCollected: 0,
+                enemiesDefeated: 0,
+                powerupsUsed: 0,
+                totalJumps: 0,
+                bestCombo: 0
+            };
+            
+            // Telegram WebApp integration
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(JSON.stringify({
+                    score: score,
+                    level: level,
+                    grade: finalGrade.name,
+                    maxCombo: maxCombo,
+                    playTime: playTime,
+                    isNewRecord: isNewRecord
+                }));
+            }
+        };
+
+        console.log('🐱🚀 CaptainCat Adventure caricato! Usa i tasti WASD o le frecce per giocare. Premi P per pausa!');
     </script>
 </body>
 </html>
