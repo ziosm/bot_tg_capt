@@ -1356,48 +1356,48 @@ Don't let them buy it all!
                 logger.error(f"Error in milestone announcer: {e}")
                 await asyncio.sleep(60)
 
-    async def countdown_timer(self):
-        """Special countdown messages for final days"""
-        while True:
-            try:
-                time_left = PRESALE_CONFIG['end_date'] - datetime.now()
-                days_left = time_left.days
-                
-                # Special messages for final countdown
-                if days_left <= 7 and days_left > 0:
-                    if datetime.now().hour == 12:  # Once per day at noon
-                        
-                        if days_left == 1:
-                            message = "🚨 **24 HOURS LEFT!** 🚨\n\nThis is your FINAL CHANCE!"
-                        elif days_left <= 3:
-                            message = f"⏰ **ONLY {days_left} DAYS LEFT!** ⏰\n\nTime is running out!"
-                        else:
-                            message = f"📅 **{days_left} DAYS REMAINING** 📅\n\nDon't procrastinate!"
-                        
-                        progress = self.get_presale_progress()
-                        message += f"\n\n💎 Still available: {progress['remaining']} TON"
-                        message += f"\n🔥 Current progress: {progress['percentage']:.1f}%"
-                        message += "\n\n⚡ **Every second counts now!**"
-                        
-                        keyboard = [[InlineKeyboardButton("⏰ BUY BEFORE TIME RUNS OUT!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
-                        
-                        for channel_id in self.fomo_channels:
-                            if channel_id:
-                                try:
-                                    await self.app.bot.send_message(
-                                        channel_id, 
-                                        message, 
-                                        reply_markup=InlineKeyboardMarkup(keyboard),
-                                        parse_mode='Markdown'
-                                    )
-                                except Exception as e:
-                                    logger.error(f"Error sending countdown message to {channel_id}: {e}")
-                
-                await asyncio.sleep(3600)  # Check every hour
-                
-            except Exception as e:
-                logger.error(f"Error in countdown timer: {e}")
-                await asyncio.sleep(3600)
+async def countdown_timer(self):
+    """Special countdown messages for final days"""
+    while True:
+        try:
+            time_left = PRESALE_CONFIG['end_date'] - datetime.now()
+            days_left = time_left.days
+            
+            # Special messages for final countdown
+            if days_left <= 7 and days_left > 0:
+                if datetime.now().hour == 12:  # Once per day at noon
+                    
+                    if days_left == 1:
+                        message = "🚨 **24 HOURS LEFT!** 🚨\n\nThis is your FINAL CHANCE!"
+                    elif days_left <= 3:
+                        message = f"⏰ **ONLY {days_left} DAYS LEFT!** ⏰\n\nTime is running out!"
+                    else:
+                        message = f"📅 **{days_left} DAYS REMAINING** 📅\n\nDon't procrastinate!"
+                    
+                    progress = self.get_presale_progress()
+                    message += f"\n\n💎 Still available: {progress['remaining']} TON"
+                    message += f"\n🔥 Current progress: {progress['percentage']:.1f}%"
+                    message += "\n\n⚡ **Every second counts now!**"
+                    
+                    keyboard = [[InlineKeyboardButton("⏰ BUY BEFORE TIME RUNS OUT!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                    
+                    for channel_id in self.fomo_channels:
+                        if channel_id:
+                            try:
+                                await self.app.bot.send_message(
+                                    channel_id,
+                                    message,
+                                    reply_markup=InlineKeyboardMarkup(keyboard),
+                                    parse_mode='Markdown'
+                                )
+                            except Exception as e:
+                                logger.error(f"Error sending countdown message to {channel_id}: {e}")
+            
+            await asyncio.sleep(3600)  # Check every hour
+            
+        except Exception as e:
+            logger.error(f"Error in countdown timer: {e}")
+            await asyncio.sleep(3600)
 
     async def momentum_tracker(self):
         """Track and announce momentum changes"""
