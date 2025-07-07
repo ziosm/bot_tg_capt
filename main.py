@@ -607,7 +607,7 @@ class CaptainCatFOMOBot:
         
         # FOMO System State
         self.fomo_stats = {
-                                    'raised': 0.077168252,  # Aggiungi la transazione vista nei log
+            'raised': PRESALE_CONFIG['current_raised'],
             'last_buy_time': datetime.now(),
             'recent_buyers': [],
             'whale_alerts': [],
@@ -667,11 +667,6 @@ class CaptainCatFOMOBot:
         self.app.add_handler(CommandHandler("benefits", self.benefits_command))
         self.app.add_handler(CommandHandler("fomo", self.fomo_command))
         self.app.add_handler(CommandHandler("milestone", self.milestone_command))
-        
-        # Chat animation commands
-        self.app.add_handler(CommandHandler("chatboost", self.chatboost_command))
-        self.app.add_handler(CommandHandler("fact", self.crypto_fact_command))
-        self.app.add_handler(CommandHandler("motivate", self.motivate_command))
 
     async def is_admin(self, user_id: int, chat_id: int) -> bool:
         """Check if user is admin"""
@@ -1131,9 +1126,6 @@ This is your LAST CHANCE at presale prices!
         asyncio.create_task(self.whale_watcher())
         asyncio.create_task(self.milestone_announcer())
         asyncio.create_task(self.countdown_timer())
-        asyncio.create_task(self.chat_animator())
-        asyncio.create_task(self.community_engager())
-        asyncio.create_task(self.random_fact_sender())
         logger.info("FOMO scheduler started!")
 
     async def hourly_fomo_blast(self):
@@ -1374,303 +1366,11 @@ Don't let them buy it all!
                                 except:
                                     pass
                 
-    async def countdown_timer(self):
-        """Special countdown messages for final days"""
-        while True:
-            try:
-                time_left = PRESALE_CONFIG['end_date'] - datetime.now()
-                days_left = time_left.days
-                
-                # Special messages for final countdown
-                if days_left <= 7 and days_left > 0:
-                    if datetime.now().hour == 12:  # Once per day at noon
-                        
-                        if days_left == 1:
-                            message = "🚨 **24 HOURS LEFT!** 🚨\n\nThis is your FINAL CHANCE!"
-                        elif days_left <= 3:
-                            message = f"⏰ **ONLY {days_left} DAYS LEFT!** ⏰\n\nTime is running out!"
-                        else:
-                            message = f"📅 **{days_left} DAYS REMAINING** 📅\n\nDon't procrastinate!"
-                        
-                        progress = self.get_presale_progress()
-                        message += f"\n\n💎 Still available: {progress['remaining']} TON"
-                        message += f"\n🔥 Current progress: {progress['percentage']:.1f}%"
-                        message += "\n\n⚡ **Every second counts now!**"
-                        
-                        keyboard = [[InlineKeyboardButton("⏰ BUY BEFORE TIME RUNS OUT!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
-                        
-                        for channel_id in self.fomo_channels:
-                            if channel_id:
-                                try:
-                                    await self.app.bot.send_message(
-                                        channel_id,
-                                        message,
-                                        reply_markup=InlineKeyboardMarkup(keyboard),
-                                        parse_mode='Markdown'
-                                    )
-                                except:
-                                    pass
-                
                 await asyncio.sleep(3600)  # Check every hour
                 
             except Exception as e:
                 logger.error(f"Error in countdown timer: {e}")
                 await asyncio.sleep(3600)
-
-    # ===== CHAT ANIMATION FEATURES =====
-    async def chat_animator(self):
-        """Animate chat with light engaging messages"""
-        await asyncio.sleep(600)  # Wait 10 min after start
-        
-        engagement_messages = [
-            "🎯 Quick question fam: Who's already in the game? Drop a 🐱 if you're a CAT holder!",
-            "☕ Gm legends! How's everyone feeling about CaptainCat today? 🚀",
-            "💭 Fun fact: Did you know cats have been worshipped for over 4000 years? Time to worship CAT token! 😸",
-            "🎮 Who's playing CaptainCat Adventure right now? Share your high score! 🏆",
-            "🌍 Where is our community from? Drop your flag! 🏴‍☠️",
-            "⚡ Energy check! Rate your FOMO level from 1-10! Mine is 11! 🔥",
-            "🤔 What brought you to CaptainCat? The game? The community? The gains? Tell us!",
-            "📊 Poll time! Who thinks we'll hit our presale target this week? 🙋‍♂️",
-            "🎲 Lucky number time! Comment your lucky number for a surprise! 🍀",
-            "💎 Shoutout to all diamond hands in here! You're the real MVPs! 👑",
-            "🌙 Night owls or early birds? When do you check crypto? 🦉",
-            "🎯 What's your CAT price prediction for EOY? Dream big! 💭",
-            "🔥 The energy in here is incredible! Love this community! ❤️",
-            "📈 Chart watchers, how we looking? Bullish vibes only! 🐂",
-            "🎪 Welcome to all new members! Say hi and introduce yourself! 👋"
-        ]
-        
-        questions = [
-            "❓ What's your favorite thing about CaptainCat so far?",
-            "🎮 What's your best score in the game? Screenshot it!",
-            "💰 What was your first crypto? Mine was BTC at $100 (sold at $150 😭)",
-            "🚀 If CAT hits $1, what will you do first?",
-            "🌟 Who referred you to CaptainCat? Tag them!",
-            "📱 iOS or Android for crypto? Let's settle this!",
-            "🏆 What achievement are you most proud of in crypto?",
-            "🎯 Realistic EOY price prediction? Go!",
-            "🤝 Best crypto community you've been part of? (Besides this one 😉)",
-            "💡 Any suggestions for the project? We're listening!"
-        ]
-        
-        while self.chat_animation['enabled']:
-            try:
-                # Check chat activity
-                time_since_last = datetime.now() - self.chat_animation['last_message_time']
-                
-                # If chat is quiet for 20-40 min, send something
-                if time_since_last.seconds > random.randint(1200, 2400):
-                    # Choose message type
-                    message_type = random.choice(['engagement', 'question', 'motivation'])
-                    
-                    if message_type == 'engagement':
-                        message = random.choice(engagement_messages)
-                    elif message_type == 'question':
-                        message = random.choice(questions)
-                    else:
-                        message = await self.get_motivation_message()
-                    
-                    for channel_id in self.fomo_channels:
-                        if channel_id:
-                            try:
-                                await self.app.bot.send_message(
-                                    channel_id,
-                                    message,
-                                    parse_mode='Markdown'
-                                )
-                                self.chat_animation['last_message_time'] = datetime.now()
-                            except:
-                                pass
-                
-                # Wait before next check
-                await asyncio.sleep(random.randint(300, 600))  # 5-10 min
-                
-            except Exception as e:
-                logger.error(f"Error in chat animator: {e}")
-                await asyncio.sleep(600)
-
-    async def community_engager(self):
-        """Send periodic community building messages"""
-        await asyncio.sleep(900)  # Wait 15 min
-        
-        while True:
-            try:
-                hour = datetime.now().hour
-                
-                # Time-based messages
-                if hour == 9:  # Morning
-                    messages = [
-                        "☀️ **GM CAT FAM!** ☀️\n\nNew day, new opportunities! Let's make it count! 🚀",
-                        "🌅 **Rise and shine CaptainCats!**\n\nWho's ready to conquer the crypto world today? 💪",
-                        "☕ **Morning coffee + Chart checking = Perfect combo!**\n\nHow's everyone feeling? 📈"
-                    ]
-                elif hour == 13:  # Afternoon  
-                    messages = [
-                        "🍔 **Lunch break check-in!**\n\nDon't forget to play a quick game! 🎮",
-                        "⚡ **Afternoon energy boost!**\n\nPresale progress looking amazing! Who's excited? 🔥",
-                        "📊 **Mid-day update!**\n\nWe're growing fast! Welcome all new members! 🎉"
-                    ]
-                elif hour == 18:  # Evening
-                    messages = [
-                        "🌆 **Evening vibes with the best community!**\n\nHow was your day, CAT fam? 💫",
-                        "🍻 **After work = CAT time!**\n\nWho's checking the game leaderboard? 🏆",
-                        "🎯 **Daily reminder:**\n\nYou're early to something special! 🚀"
-                    ]
-                elif hour == 22:  # Night
-                    messages = [
-                        "🌙 **Goodnight from CaptainCat!**\n\nRest well, tomorrow we moon! 🚀",
-                        "⭐ **Night shift crew, where you at?**\n\nChart never sleeps! 📈",
-                        "😴 **Sweet dreams of green candles!**\n\nSee you tomorrow, legends! 💎"
-                    ]
-                else:
-                    messages = None
-                
-                if messages:
-                    message = random.choice(messages)
-                    for channel_id in self.fomo_channels:
-                        if channel_id:
-                            try:
-                                await self.app.bot.send_message(channel_id, message, parse_mode='Markdown')
-                            except:
-                                pass
-                
-                # Wait 3-4 hours
-                await asyncio.sleep(random.randint(10800, 14400))
-                
-            except Exception as e:
-                logger.error(f"Error in community engager: {e}")
-                await asyncio.sleep(3600)
-
-    async def random_fact_sender(self):
-        """Send interesting crypto/cat facts"""
-        await asyncio.sleep(1800)  # Wait 30 min
-        
-        facts = [
-            "🧠 **Did you know?** The first Bitcoin transaction was for pizza! 10,000 BTC for 2 pizzas. Today that's worth $400M+ 🍕",
-            "🐱 **Cat Fact:** Cats spend 70% of their lives sleeping. That's 13-16 hours a day! Just like HODLers checking charts! 😴",
-            "💎 **Crypto Wisdom:** 'Time in the market beats timing the market' - This is why early investors win! ⏰",
-            "🚀 **Fun Fact:** There are over 2.9 million crypto wallets created daily! You're part of the revolution! 🌍",
-            "😸 **Cat Fact:** A group of cats is called a 'clowder'. A group of CAT holders? Legends! 👑",
-            "📈 **History:** Dogecoin was created as a joke in 2013. Now it's worth billions. Never underestimate memes! 🐕",
-            "🧮 **Math Time:** If you bought $100 of BTC in 2010, you'd have $48 million today. Early = Smart! 🤯",
-            "🐾 **Cat Fact:** Cats can jump up to 6 times their length! Just like CAT token will jump! 🦘",
-            "💡 **Did you know?** 'HODL' came from a drunk Bitcoin forum post in 2013. Now it's crypto law! 🍺",
-            "🌟 **Fact:** Over 100 million people own crypto worldwide. We're still early! 🌍"
-        ]
-        
-        tips = [
-            "💡 **Pro Tip:** Always DYOR (Do Your Own Research). Knowledge is power in crypto! 📚",
-            "🛡️ **Security Tip:** Never share your seed phrase. Not even with support! 🔒",
-            "📊 **Trading Tip:** Emotions are your enemy. Have a plan and stick to it! 🎯",
-            "💎 **HODL Tip:** Zoom out on charts when in doubt. Long term vision wins! 🔭",
-            "🎮 **Game Tip:** Play during low traffic hours for better performance! ⚡",
-            "🚀 **Investment Tip:** Only invest what you can afford to lose. Stay safe! 🛡️",
-            "📈 **Chart Tip:** Support and resistance levels are your friends! 📏",
-            "🐱 **CAT Tip:** Engage with the community. We're stronger together! 🤝",
-            "⏰ **Timing Tip:** DCA (Dollar Cost Average) beats trying to time the market! 📅",
-            "🧠 **Mindset Tip:** Think in years, not days. Patience pays! ⏳"
-        ]
-        
-        while True:
-            try:
-                # Send fact or tip
-                if random.choice([True, False]):
-                    message = random.choice(facts)
-                else:
-                    message = random.choice(tips)
-                
-                # Avoid repeating
-                if message != self.chat_animation.get('last_fact'):
-                    self.chat_animation['last_fact'] = message
-                    
-                    for channel_id in self.fomo_channels:
-                        if channel_id:
-                            try:
-                                await self.app.bot.send_message(channel_id, message, parse_mode='Markdown')
-                            except:
-                                pass
-                
-                # Wait 2-3 hours
-                await asyncio.sleep(random.randint(7200, 10800))
-                
-            except Exception as e:
-                logger.error(f"Error in fact sender: {e}")
-                await asyncio.sleep(3600)
-
-    async def get_motivation_message(self) -> str:
-        """Get motivational message"""
-        progress = self.get_presale_progress()
-        
-        motivations = [
-            f"🔥 **LFG CAT FAM!** We're {progress['percentage']:.1f}% to our goal! Every contribution matters! 🚀",
-            f"💪 **Stay strong CaptainCats!** Only {progress['remaining']} TON to go! We got this! 💎",
-            "🌟 **Remember:** The best time to plant a tree was 20 years ago. The second best time is now! 🌳",
-            "🚀 **Greatness awaits those who dare!** You're part of something special! ⭐",
-            "💎 **Diamond hands are forged under pressure!** Stay strong, stay CAT! 💪",
-            f"📈 **Progress update:** {progress['percentage']:.1f}% complete! History in the making! 📚",
-            "🎯 **Focus on the goal:** DEX listing is coming! Then we fly! 🦅",
-            "⚡ **Energy breeds energy!** Keep the momentum going, legends! 🔥",
-            "🌙 **To the moon? No, we're going to build our own galaxy!** 🌌",
-            "👑 **You're not just investors, you're pioneers!** First movers advantage! 🏆"
-        ]
-        
-        return random.choice(motivations)
-
-    # ===== CHAT ANIMATION COMMANDS =====
-    @handle_errors
-    async def chatboost_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Admin command to control chat animation"""
-        user_id = update.effective_user.id
-        chat_id = update.effective_chat.id
-        
-        if not await self.is_admin(user_id, chat_id):
-            await update.message.reply_text("🔒 This command is for admins only.")
-            return
-        
-        if context.args and context.args[0].lower() == 'off':
-            self.chat_animation['enabled'] = False
-            await update.message.reply_text("🔇 Chat animation disabled.")
-        elif context.args and context.args[0].lower() == 'on':
-            self.chat_animation['enabled'] = True
-            await update.message.reply_text("🔊 Chat animation enabled!")
-        else:
-            status = "🟢 ON" if self.chat_animation['enabled'] else "🔴 OFF"
-            await update.message.reply_text(
-                f"💬 **Chat Animation Status:** {status}\n\n"
-                f"Commands:\n"
-                f"/chatboost on - Enable animation\n"
-                f"/chatboost off - Disable animation",
-                parse_mode='Markdown'
-            )
-
-    @handle_errors
-    async def crypto_fact_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Send a random crypto fact"""
-        facts = [
-            "🧠 Satoshi Nakamoto's identity remains unknown, holding ~1 million BTC!",
-            "💰 The total crypto market cap exceeded $3 trillion in 2021!",
-            "🍕 Bitcoin Pizza Day is May 22nd - celebrating the first BTC transaction!",
-            "⚡ There will only ever be 21 million Bitcoin!",
-            "🌍 El Salvador was the first country to adopt Bitcoin as legal tender!",
-            "📱 More people have crypto wallets than bank accounts in some countries!",
-            "🔥 About 20% of all Bitcoin is lost forever in inaccessible wallets!",
-            "🚀 The word 'cryptocurrency' was added to Merriam-Webster in 2018!",
-            "💎 'Satoshi' is the smallest unit of Bitcoin (0.00000001 BTC)!",
-            "🎮 The first NFT was created in 2014, before Ethereum existed!"
-        ]
-        
-        fact = random.choice(facts)
-        await update.message.reply_text(f"💡 **Crypto Fact:**\n\n{fact}", parse_mode='Markdown')
-
-    @handle_errors
-    async def motivate_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Send motivational message"""
-        message = await self.get_motivation_message()
-        
-        keyboard = [[InlineKeyboardButton("💎 I'M MOTIVATED!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
     # ===== ENHANCED TRANSACTION MONITOR =====
     async def format_transaction_message(self, tx_data: dict) -> str:
@@ -2818,11 +2518,6 @@ Be the first hero to:
         else:
             response = self.generate_ai_response(message, user_name)
             await update.message.reply_text(response, parse_mode='Markdown')
-        
-        # Track activity for chat animation
-        self.chat_animation['last_message_time'] = datetime.now()
-        self.chat_animation['message_count'] += 1
-        self.chat_animation['active_users'].add(user_id)
 
     def generate_ai_response(self, message: str, user_name: str) -> str:
         """Generate AI response with FOMO elements"""
