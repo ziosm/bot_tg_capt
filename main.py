@@ -1,717 +1,4 @@
-# ===== ANTI-SPAM COMMANDS =====
-    @handle_errors
-    async def antispam_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Anti-spam control command (admin only)"""
-        user_id = update.effective_user.id
-        chat_id = update.effective_chat.id
-        
-        if not await self.is_admin(user_id, chat_id):
-            await update.message.reply_text("🔒 This command is for admins only.")
-            return
-        
-        antispam_info = f"""
-🛡️ **CAPTAINCAT ANTI-SPAM SYSTEM**
-
-📊 **Current Status:**
-• Active Users Monitored: {len(self.anti_spam.user_messages)}
-• Banned Users: {len(self.anti_spam.banned_users)}
-• Message Hashes Tracked: {len(self.anti_spam.message_hashes)}
-• Spam Scores Calculated: {len(self.anti_spam.spam_scores)}
-
-⚙️ **Thresholds:**
-• Messages per minute: {SPAM_THRESHOLD['messages_per_minute']}
-• Duplicate threshold: {SPAM_THRESHOLD['duplicate_threshold']}
-• Link threshold: {SPAM_THRESHOLD['link_threshold']}
-• Emoji threshold: {SPAM_THRESHOLD['emoji_threshold']}
-
-🎯 **Actions:**
-• Score 5.0+: Message filtered
-• Score 8.0+: User temporarily banned (1 hour)
-
-Use /spaminfo @username to check user spam info.
-        """
-        
-        await update.message.reply_text(antispam_info, parse_mode='Markdown')
-
-    @handle_errors
-    async def tonmonitor_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """TON monitoring control command (admin only)"""
-        user_id = update.effective_user.id
-        chat_id = update.effective_chat.id
-        
-        if not await self.is_admin(user_id, chat_id):
-            await update.message.reply_text("🔒 This command is for admins only.")
-            return
-        
-        args = context.args
-        if args and args[0].lower() == 'start':
-            if not self.ton_monitor.monitoring:
-                # Start monitoring in background
-                asyncio.create_task(self.ton_monitor.monitor_transactions())
-                await update.message.reply_text("🚀 TON transaction monitoring started!")
-            else:
-                await update.message.reply_text("⚠️ TON monitoring is already running.")
-        elif args and args[0].lower() == 'stop':
-            self.ton_monitor.stop_monitoring()
-            await update.message.reply_text("⏹️ TON transaction monitoring stopped.")
-        else:
-            status = "🟢 Running" if self.ton_monitor.monitoring else "🔴 Stopped"
-            monitor_info = f"""
-💎 **TON TRANSACTION MONITOR**
-
-📊 **Status:** {status}
-🏠 **Contract:** `{self.ton_monitor.contract_address or 'Not configured'}`
-📢 **Notification Chat:** `{self.ton_monitor.notification_chat or 'Not configured'}`
-🔑 **API Key:** {'✅ Set' if self.ton_monitor.api_key else '❌ Missing'}
-📈 **Last TX LT:** {self.ton_monitor.last_transaction_lt or 'None'}
-
-**Commands:**
-/tonmonitor start - Start monitoring
-/tonmonitor stop - Stop monitoring
-            """
-            await update.message.reply_text(monitor_info, parse_mode='Markdown')
-
-    @handle_errors
-    async def spaminfo_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Get spam info for a user (admin only)"""
-        user_id = update.effective_user.id
-        chat_id = update.effective_chat.id
-        
-        if not await self.is_admin(user_id, chat_id):
-            await update.message.reply_text("🔒 This command is for admins only.")
-            return
-        
-        if not context.args:
-            await update.message.reply_text("❌ Usage: /spaminfo user_id")
-            return
-        
-        target_user = context.args[0]
-        try:
-            target_user_id = int(target_user)
-            
-            spam_info = self.anti_spam.get_user_spam_info(target_user_id)
-            
-            status = "🔴 BANNED" if spam_info['is_banned'] else "🟢 CLEAN"
-            ban_info = ""
-            if spam_info['is_banned'] and spam_info['ban_expires']:
-                ban_info = f"\n⏰ **Ban expires:** {spam_info['ban_expires'].strftime('%H:%M:%S')}"
-            
-            info_msg = f"""
-📊 **SPAM INFO FOR USER {target_user_id}**
-
-🛡️ **Status:** {status}
-⚡ **Spam Score:** {spam_info['score']:.2f}
-📱 **Messages Tracked:** {spam_info['message_count']}{ban_info}
-
-**Score Meaning:**
-• 0.0-2.0: Clean user
-• 2.0-5.0: Suspicious activity
-• 5.0+: Spam detected
-• 8.0+: Auto-banned
-            """
-            
-            await update.message.reply_text(info_msg, parse_mode='Markdown')
-            
-        except ValueError:
-            await update.message.reply_text("❌ Invalid user_id format.")
-
-    # ===== GAME COMMANDS =====
-    @rate_limit(max_calls=3, period=60, group_max_calls=15, group_period=60)
-    @handle_errors
-    async def game_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Main game command optimized for groups"""
-        user_id = update.effective_user.id
-        user = update.effective_user
-        chat_id = update.effective_chat.id
-        is_group = chat_id < 0
-        
-        logger.info(f"Game command from user {user_id} in {'group' if is_group else 'private'} {chat_id}")
-        
-        # Game text customized for group/private
-        if is_group:
-            game_text = f"""
-🎮 **{user.first_name} is about to play CaptainCat Adventure!** 🦸‍♂️
-
-🌟 **The Most Fun Crypto Game:**
-• Collect golden CAT coins (100 pts)
-• Defeat bear markets (200 pts) 
-• Progressive crypto-themed levels
-• Climb the group leaderboard!
-
-🏆 **Compete in the group for:**
-• Being #1 on the leaderboard
-• Getting special recognition
-• Winning weekly tournaments
-• Earning CAT rewards!
-
-🎯 **Direct link for better experience:**
-            """
-        else:
-            game_text = f"""
-🎮 **CaptainCat Adventure** 🦸‍♂️
-
-Hello {user.first_name}! Ready for the crypto adventure?
-
-🌟 **Game Objectives:**
-• Collect golden CAT coins (100 points)
-• Defeat bear markets (200 points)
-• Complete all levels (500 bonus)
-• Become #1 on the leaderboard!
-
-🚀 **Special Mechanics:**
-• Bull market power-ups for boost
-• Combo multiplier for high scores
-• Crypto-themed enemies
-• Progressive levels getting harder
-
-💎 **Community Rewards:**
-• Top players get special recognition
-• Weekly tournaments with prizes
-• CAT token integration
-
-🎯 **Tip:** Use touch controls for mobile or arrows for desktop!
-            """
-        
-        # Different buttons for group vs private
-        try:
-            if is_group:
-                keyboard = [
-                    [InlineKeyboardButton("🎮 Play Now! 🦸‍♂️", url=self._web_app_url)],
-                    [InlineKeyboardButton("🤖 Private Chat", url=f"https://t.me/{context.bot.username}"),
-                     InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
-                ]
-            else:
-                # In private chat, try Web App first then fallback
-                try:
-                    keyboard = [
-                        [InlineKeyboardButton("🎮 Play CaptainCat Adventure! 🦸‍♂️", web_app=WebAppInfo(url=self._web_app_url))],
-                        [InlineKeyboardButton("📊 My Stats", callback_data="mystats"),
-                         InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
-                    ]
-                except Exception:
-                    # Fallback if Web App not supported
-                    keyboard = [
-                        [InlineKeyboardButton("🎮 Play Now! 🦸‍♂️", url=self._web_app_url)],
-                        [InlineKeyboardButton("📊 My Stats", callback_data="mystats"),
-                         InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
-                    ]
-            
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            # Handle both messages and callbacks
-            if update.callback_query:
-                await update.callback_query.edit_message_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
-            else:
-                await update.message.reply_text(game_text, reply_markup=reply_markup, parse_mode='Markdown')
-                
-        except BadRequest as e:
-            if "Button_type_invalid" in str(e) or "BUTTON_TYPE_INVALID" in str(e):
-                logger.warning("Web App button failed, sending fallback")
-                await self._send_game_fallback(update, context)
-            else:
-                raise e
-
-    @rate_limit(max_calls=5, period=60)
-    @handle_errors
-    async def mystats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Player personal statistics"""
-        user_id = update.effective_user.id
-        user = update.effective_user
-        
-        stats = await self.db.get_user_best_score(user_id)
-        
-        if not stats or stats['best_score'] is None:
-            no_stats_text = f"""
-🎮 **{user.first_name}, you haven't played yet!**
-
-🚀 **Start your crypto adventure now:**
-• Collect CAT coins
-• Defeat bear markets  
-• Climb the leaderboard
-• Become a legend!
-
-🎯 Click "Play Now" to start!
-            """
-            
-            keyboard = [[InlineKeyboardButton("🎮 Play Now!", callback_data="game")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            # Handle both messages and callbacks
-            if update.callback_query:
-                await update.callback_query.edit_message_text(no_stats_text, reply_markup=reply_markup, parse_mode='Markdown')
-            else:
-                await update.message.reply_text(no_stats_text, reply_markup=reply_markup, parse_mode='Markdown')
-            return
-        
-        # Calculate player grade
-        if stats['best_score'] >= 50000:
-            grade = "🏆 CRYPTO LEGEND"
-            grade_emoji = "👑"
-        elif stats['best_score'] >= 25000:
-            grade = "💎 DIAMOND HANDS"
-            grade_emoji = "💎"
-        elif stats['best_score'] >= 10000:
-            grade = "🚀 MOON WALKER"
-            grade_emoji = "🚀"
-        elif stats['best_score'] >= 5000:
-            grade = "⚡ BULL RUNNER"
-            grade_emoji = "⚡"
-        elif stats['best_score'] >= 1000:
-            grade = "🐱 CAT HERO"
-            grade_emoji = "🐱"
-        else:
-            grade = "🌱 ROOKIE TRADER"
-            grade_emoji = "🌱"
-        
-        stats_text = f"""
-📊 **{user.first_name}'s Statistics** {grade_emoji}
-
-🏆 **Grade:** {grade}
-⭐ **Best Score:** {stats['best_score']:,} points
-🎯 **Max Level:** {stats['max_level']}
-🪙 **CAT Coins Collected:** {stats['total_coins']:,}
-💀 **Bear Markets Defeated:** {stats['total_enemies']:,}
-🎮 **Games Played:** {stats['games_played']}
-
-🔥 **Next Goal:**
-{self._get_next_goal(stats['best_score'])}
-        """
-        
-        keyboard = [
-            [InlineKeyboardButton("🎮 Play Again!", callback_data="game")],
-            [InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        # Handle both messages and callbacks
-        if update.callback_query:
-            await update.callback_query.edit_message_text(stats_text, reply_markup=reply_markup, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(stats_text, reply_markup=reply_markup, parse_mode='Markdown')
-
-    def _get_next_goal(self, current_score):
-        """Calculate player's next goal"""
-        if current_score < 1000:
-            return "Reach 1,000 points to become CAT HERO! 🐱"
-        elif current_score < 5000:
-            return "Reach 5,000 points to become BULL RUNNER! ⚡"
-        elif current_score < 10000:
-            return "Reach 10,000 points to become MOON WALKER! 🚀"
-        elif current_score < 25000:
-            return "Reach 25,000 points for DIAMOND HANDS! 💎"
-        elif current_score < 50000:
-            return "Reach 50,000 points for CRYPTO LEGEND! 👑"
-        else:
-            return "You're already a LEGEND! Keep the first place! 🏆"
-
-    @rate_limit(max_calls=3, period=60, group_max_calls=10, group_period=60)
-    @handle_errors
-    async def leaderboard_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Optimized game leaderboard"""
-        chat_id = update.effective_chat.id
-        is_group = chat_id < 0
-        
-        # Get leaderboard (group-specific if in a group)
-        leaderboard = await self.db.get_group_leaderboard(chat_id if is_group else None, 10)
-        
-        if not leaderboard:
-            no_players_text = f"""
-🏆 **CaptainCat Game Leaderboard** 🏆
-
-🎮 **No one has played yet!**
-
-Be the first hero to:
-• Start the adventure
-• Set the record
-• Become a legend
-• Conquer the leaderboard!
-
-🚀 **Glory awaits you!**
-            """
-            
-            keyboard = [[InlineKeyboardButton("🎮 Be the First!", callback_data="game")]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            # Handle both messages and callbacks
-            if update.callback_query:
-                await update.callback_query.edit_message_text(no_players_text, reply_markup=reply_markup, parse_mode='Markdown')
-            else:
-                await update.message.reply_text(no_players_text, reply_markup=reply_markup, parse_mode='Markdown')
-            return
-        
-        # Create leaderboard
-        leaderboard_text = "🏆 **CAPTAINCAT GAME LEADERBOARD** 🏆\n\n"
-        
-        if is_group:
-            leaderboard_text += "🎯 **Group Leaderboard** 🎯\n\n"
-        else:
-            leaderboard_text += "🌍 **Global Leaderboard** 🌍\n\n"
-        
-        medals = ["🥇", "🥈", "🥉"]
-        for i, player in enumerate(leaderboard):
-            if i < 3:
-                medal = medals[i]
-            else:
-                medal = f"**{i+1}.**"
-            
-            name = player['first_name'] or player['username'] or "Anonymous Hero"
-            score = player['score']
-            level = player['level']
-            
-            # Grade emoji
-            if score >= 50000:
-                grade_emoji = "👑"
-            elif score >= 25000:
-                grade_emoji = "💎"
-            elif score >= 10000:
-                grade_emoji = "🚀"
-            elif score >= 5000:
-                grade_emoji = "⚡"
-            elif score >= 1000:
-                grade_emoji = "🐱"
-            else:
-                grade_emoji = "🌱"
-            
-            leaderboard_text += f"{medal} {grade_emoji} **{name}** - {score:,} pts (Lv.{level})\n"
-        
-        leaderboard_text += f"\n🎮 **Want to join the leaderboard? Play now!**"
-        leaderboard_text += f"\n🏆 **{len(leaderboard)} heroes have already played!**"
-        
-        keyboard = [
-            [InlineKeyboardButton("🎮 Play Now!", callback_data="game")],
-            [InlineKeyboardButton("📊 My Stats", callback_data="mystats")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        # Handle both messages and callbacks
-        if update.callback_query:
-            await update.callback_query.edit_message_text(leaderboard_text, reply_markup=reply_markup, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(leaderboard_text, reply_markup=reply_markup, parse_mode='Markdown')
-
-    @handle_errors
-    async def handle_web_app_data(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle data from Web App game"""
-        if update.message and update.message.web_app_data:
-            try:
-                # Parse game results
-                data = json.loads(update.message.web_app_data.data)
-                
-                user = update.effective_user
-                chat_id = update.effective_chat.id
-                is_group = chat_id < 0
-                
-                # Save score to database
-                saved = await self.db.save_score(
-                    user_id=user.id,
-                    username=user.username,
-                    first_name=user.first_name,
-                    score=data.get('score', 0),
-                    level=data.get('level', 1),
-                    coins=data.get('coins', 0),
-                    enemies=data.get('enemies', 0),
-                    play_time=data.get('playTime', 0),
-                    group_id=chat_id if is_group else None
-                )
-                
-                # Congratulations message
-                score = data.get('score', 0)
-                level = data.get('level', 1)
-                coins = data.get('coins', 0)
-                enemies = data.get('enemies', 0)
-                
-                # Determine message type based on score
-                if score >= 50000:
-                    message = f"👑 **ABSOLUTE LEGEND!** 👑\n{user.first_name} reached {score:,} points! 🏆✨"
-                    celebration = "🎊🎊🎊"
-                elif score >= 25000:
-                    message = f"💎 **DIAMOND HANDS ACHIEVED!** 💎\n{user.first_name} scored {score:,} points! 🚀🌙"
-                    celebration = "🔥🔥🔥"
-                elif score >= 10000:
-                    message = f"🚀 **MOON WALKER!** 🚀\n{user.first_name} got {score:,} points! 🌙⭐"
-                    celebration = "⚡⚡⚡"
-                elif score >= 5000:
-                    message = f"⚡ **BULL RUNNER!** ⚡\n{user.first_name} reached {score:,} points! 📈💪"
-                    celebration = "🎯🎯🎯"
-                elif score >= 1000:
-                    message = f"🐱 **CAT HERO!** 🐱\n{user.first_name} scored {score:,} points! 🎮💫"
-                    celebration = "🎉🎉🎉"
-                else:
-                    message = f"🌱 **Great start!** 🌱\n{user.first_name} got {score:,} points! 💪🎮"
-                    celebration = "👏👏👏"
-                
-                # Detailed statistics
-                stats_detail = f"\n\n📊 **Game Statistics:**\n"
-                stats_detail += f"🪙 CAT Coins: {coins}\n"
-                stats_detail += f"💀 Bear Markets defeated: {enemies}\n"
-                stats_detail += f"🎯 Level reached: {level}\n"
-                
-                if not saved:
-                    stats_detail += "\n⚠️ *Score not saved - database temporarily unavailable*"
-                
-                # Check if it's a new group record
-                if is_group and saved:
-                    leaderboard = await self.db.get_group_leaderboard(chat_id, 1)
-                    if leaderboard and leaderboard[0]['score'] <= score and leaderboard[0]['user_id'] == user.id:
-                        message += f"\n\n🏆 **NEW GROUP RECORD!** 🏆 {celebration}"
-                
-                message += stats_detail
-                
-                keyboard = [
-                    [InlineKeyboardButton("🎮 Play Again!", callback_data="game")],
-                    [InlineKeyboardButton("📊 My Stats", callback_data="mystats"),
-                     InlineKeyboardButton("🏆 Leaderboard", callback_data="leaderboard")]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
-                
-            except json.JSONDecodeError:
-                await update.message.reply_text("❌ Error saving game results. Try again!")
-            except Exception as e:
-                logger.error(f"Error handling web app data: {e}")
-                await update.message.reply_text("⚠️ Temporary issue saving data. The game still works!")
-
-    # ===== BUTTON HANDLER =====
-    @handle_errors
-    async def button_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        query = update.callback_query
-        await query.answer()
-        
-        # FOMO button handlers
-        if query.data == "live_stats":
-            await self.live_stats_command(update, context)
-        elif query.data == "recent_buyers":
-            await self.whobought_command(update, context)
-        elif query.data == "predictions":
-            await self.price_prediction_command(update, context)
-        elif query.data == "presale_progress":
-            await self.presale_status_command(update, context)
-        elif query.data == "presale_details":
-            await self.benefits_command(update, context)
-        elif query.data == "milestones":
-            await self.milestone_command(update, context)
-        elif query.data == "calculate_returns":
-            # Simple return calculator
-            calc_msg = """
-💰 **RETURN CALCULATOR**
-
-**Your Investment → Potential Returns:**
-
-📊 **10 TON Investment:**
-• At 2x: 20 TON
-• At 10x: 100 TON
-• At 50x: 500 TON
-• At 100x: 1,000 TON
-
-📊 **50 TON Investment:**
-• At 2x: 100 TON
-• At 10x: 500 TON
-• At 50x: 2,500 TON
-• At 100x: 5,000 TON
-
-📊 **100 TON Investment:**
-• At 2x: 200 TON
-• At 10x: 1,000 TON
-• At 50x: 5,000 TON
-• At 100x: 10,000 TON
-
-🔥 **Remember:** These are based on similar projects that succeeded!
-            """
-            keyboard = [[InlineKeyboardButton("💎 INVEST NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
-            await query.edit_message_text(calc_msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
-        # Game button handlers
-        elif query.data == "game":
-            await self.game_command(update, context)
-        elif query.data == "mystats":
-            await self.mystats_command(update, context)
-        elif query.data == "leaderboard":
-            await self.leaderboard_command(update, context)
-        # Other existing buttons
-        elif query.data == "presale":
-            await self.presale_command(update, context)
-        elif query.data == "roadmap":
-            await self.roadmap_command(update, context)
-        elif query.data == "team":
-            await self.team_command(update, context)
-        elif query.data == "community":
-            await self.community_command(update, context)
-        elif query.data == "help":
-            await self.help_command(update, context)
-
-    # ===== MESSAGE HANDLER =====
-    @rate_limit(max_calls=10, period=60, group_max_calls=20, group_period=60)
-    @handle_errors
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle regular messages with anti-spam and FOMO responses"""
-        user_id = update.effective_user.id
-        chat_id = update.effective_chat.id
-        message_text = update.message.text
-        user_name = update.effective_user.first_name or "Hero"
-        
-        # Check for spam
-        if self.anti_spam.is_spam(message_text, user_id):
-            spam_info = self.anti_spam.get_user_spam_info(user_id)
-            
-            # Log spam action
-            action = "BANNED" if spam_info['is_banned'] else "FILTERED"
-            await self.db.log_spam_action(user_id, chat_id, message_text, spam_info['score'], action)
-            
-            # Delete message if possible (in groups)
-            if chat_id < 0:  # Group chat
-                try:
-                    await update.message.delete()
-                    
-                    # Notify admins about spam
-                    if spam_info['is_banned']:
-                        warning_msg = f"🛡️ **SPAM DETECTED & USER BANNED**\n\n"
-                        warning_msg += f"👤 **User:** {user_name} ({user_id})\n"
-                        warning_msg += f"⚡ **Score:** {spam_info['score']:.2f}\n"
-                        warning_msg += f"⏰ **Ban duration:** 1 hour\n"
-                        warning_msg += f"📝 **Message:** {message_text[:100]}..."
-                        
-                        await context.bot.send_message(
-                            chat_id=chat_id,
-                            text=warning_msg,
-                            parse_mode='Markdown'
-                        )
-                    
-                    logger.info(f"Spam message deleted from user {user_id}, score: {spam_info['score']}")
-                    return
-                except:
-                    pass
-            else:
-                # In private chat, just warn
-                await update.message.reply_text(
-                    f"⚠️ Your message appears to be spam (score: {spam_info['score']:.1f}). Please moderate your messaging."
-                )
-                return
-        
-        # Process normal message
-        message = message_text.lower()
-        
-        # FOMO keywords
-        fomo_words = ['price', 'presale', 'buy', 'invest', 'fomo', 'pump', 'moon', 'listing', 'dex', 'prediction']
-        game_words = ['game', 'play', 'adventure', 'score', 'leaderboard', 'stats']
-        
-        if any(word in message for word in fomo_words):
-            responses = [
-                f"🚀 {user_name}! Presale is {self.get_presale_progress()['percentage']:.1f}% filled! Don't miss out!",
-                f"💎 {user_name}, only {self.get_presale_progress()['remaining']} TON spots left! Time is running out!",
-                f"🔥 {user_name}, smart money is moving! {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 50])} whales already joined!"
-            ]
-            response = random.choice(responses)
-            response += "\n\n🎯 Use /stats for live updates or /predict for price predictions!"
-            
-            keyboard = [[InlineKeyboardButton("💎 BUY NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
-            await update.message.reply_text(response, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
-        elif any(word in message for word in game_words):
-            responses = [
-                f"🎮 {user_name}! CaptainCat Adventure awaits! Collect CAT coins and defeat bear markets!",
-                f"🚀 Ready for adventure, {user_name}? The game is full of crypto surprises!",
-                f"⚡ {user_name}, become the leaderboard king! Use /game to start!"
-            ]
-            response = random.choice(responses) + "\n\n🎯 Use /game to play now!"
-            await update.message.reply_text(response, parse_mode='Markdown')
-        else:
-            response = self.generate_ai_response(message, user_name)
-            await update.message.reply_text(response, parse_mode='Markdown')
-        
-        # Track activity for chat animation
-        self.chat_animation['last_message_time'] = datetime.now()
-        self.chat_animation['message_count'] += 1
-        self.chat_animation['active_users'].add(user_id)
-
-    def generate_ai_response(self, message: str, user_name: str) -> str:
-        """Generate AI response with FOMO elements"""
-        greetings = ['hello', 'hi', 'hey', 'good morning', 'good evening', 'greetings']
-        price_words = ['price', 'cost', 'how much', 'value', 'worth']
-        
-        progress = self.get_presale_progress()
-        
-        if any(word in message for word in greetings):
-            responses = [
-                f"🐱‍🦸 Hello {user_name}! Welcome to CaptainCat! Did you know presale is {progress['percentage']:.1f}% filled?",
-                f"🚀 Meow {user_name}! I'm CaptainCat AI! Have you checked our price predictions? Use /predict!",
-                f"⚡ Greetings {user_name}! Ready to join {len(set(tx['buyer'] for tx in self.fomo_stats['recent_buyers']))} other investors?"
-            ]
-            return random.choice(responses) + "\n\n🎮 Don't forget to try CaptainCat Adventure Game!"
-        elif any(word in message for word in price_words):
-            return f"""💎 **Current Presale Price:**
-• 1 TON = 10,000 CAT
-• Progress: {progress['percentage']:.1f}% filled
-• Remaining: {progress['remaining']} TON
-
-🚀 After presale, price will NEVER be this low!
-Use /predict to see potential returns!"""
-        else:
-            responses = [
-                f"Interesting question, {user_name}! While I think about it, did you see we're {progress['percentage']:.1f}% sold?",
-                f"{user_name}, great question! BTW, {len([tx for tx in self.fomo_stats['recent_buyers'] if datetime.now() - tx['time'] < timedelta(hours=1)])} people bought in the last hour!",
-                f"Hello {user_name}! I'll help you! Quick update: only {progress['remaining']} TON spots left in presale!",
-                f"{user_name}, let me help! Fun fact: last buyer got {self.fomo_stats['recent_buyers'][-1]['amount'] * PRESALE_CONFIG['token_price']:,.0f} CAT tokens!" if self.fomo_stats['recent_buyers'] else f"{user_name}, I'm here to help! Presale is filling fast!"
-            ]
-            return random.choice(responses) + f"\n\n❓ Try: /stats, /whobought, /predict, /fomo"
-
-    # ===== INITIALIZATION =====
-    async def initialize_database(self):
-        """Initialize database on startup"""
-        await self.db.init_pool()
-
-    # ===== RUN METHOD =====
-    def run(self):
-        print("🐱‍🦸 CaptainCat FOMO Bot starting...")
-        
-        # Initialize everything including FOMO scheduler
-        async def startup():
-            await self.initialize_database()
-            logger.info("Database initialized")
-            
-            # Start FOMO automation
-            await self.start_fomo_scheduler()
-            logger.info("FOMO automation started")
-            
-            # Start TON monitoring if configured
-            if self.ton_monitor.api_key and self.ton_monitor.contract_address:
-                asyncio.create_task(self.ton_monitor.monitor_transactions())
-                logger.info("TON monitoring started")
-        
-        try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(startup())
-        except Exception as e:
-            logger.error(f"Startup error: {e}")
-        
-        # Run bot
-        self.app.run_polling(
-            drop_pending_updates=True,
-            allowed_updates=["message", "callback_query"],
-            poll_interval=1.0,
-            timeout=10,
-            close_loop=False
-        )
-
-# ===== MAIN EXECUTION =====
-if __name__ == "__main__":
-    BOT_TOKEN = os.getenv('BOT_TOKEN')
-    
-    if not BOT_TOKEN:
-        print("❌ ERROR: BOT_TOKEN environment variable not found!")
-        print("💡 Configure the following environment variables on Render:")
-        print("- BOT_TOKEN (required)")
-        print("- TON_API_KEY (for transaction monitoring)")
-        print("- TOKEN_CONTRACT_ADDRESS (your CAT token contract)")
-        print("- NOTIFICATION_CHAT_ID (chat ID for transaction notifications)")
-        print("- DATABASE_URL (for persistence)")
-        print("- WEBAPP_URL (for game)")
-        print("- MAIN_GROUP_ID (for FOMO messages)")
-        print("- ANNOUNCEMENT_CHANNEL_ID (for FOMO messages)")
-    else:
-        print(f"🚀 Starting CaptainCat FOMO Bot...")
-        bot = CaptainCatFOMOBot(BOT_TOKEN)
-        bot.run()
-                import os
+import os
 import asyncio
 import logging
 import aiohttp
@@ -1116,398 +403,7 @@ class TONMonitor:
                 await asyncio.sleep(30)  # Check every 30 seconds
                 
             except Exception as e:
-                logger.error(f"Error in countdown timer: {e}")
-                await asyncio.sleep(3600)
-
-    # ===== CHAT ANIMATION FEATURES =====
-    async def chat_animator(self):
-        """Animate chat with light engaging messages"""
-        await asyncio.sleep(600)  # Wait 10 min after start
-        
-        engagement_messages = [
-            "🎯 Quick question fam: Who's already in the game? Drop a 🐱 if you're a CAT holder!",
-            "☕ Gm legends! How's everyone feeling about CaptainCat today? 🚀",
-            "💭 Fun fact: Did you know cats have been worshipped for over 4000 years? Time to worship CAT token! 😸",
-            "🎮 Who's playing CaptainCat Adventure right now? Share your high score! 🏆",
-            "🌍 Where is our community from? Drop your flag! 🏴‍☠️",
-            "⚡ Energy check! Rate your FOMO level from 1-10! Mine is 11! 🔥",
-            "🤔 What brought you to CaptainCat? The game? The community? The gains? Tell us!",
-            "📊 Poll time! Who thinks we'll hit our presale target this week? 🙋‍♂️",
-            "🎲 Lucky number time! Comment your lucky number for a surprise! 🍀",
-            "💎 Shoutout to all diamond hands in here! You're the real MVPs! 👑",
-            "🌙 Night owls or early birds? When do you check crypto? 🦉",
-            "🎯 What's your CAT price prediction for EOY? Dream big! 💭",
-            "🔥 The energy in here is incredible! Love this community! ❤️",
-            "📈 Chart watchers, how we looking? Bullish vibes only! 🐂",
-            "🎪 Welcome to all new members! Say hi and introduce yourself! 👋"
-        ]
-        
-        questions = [
-            "❓ What's your favorite thing about CaptainCat so far?",
-            "🎮 What's your best score in the game? Screenshot it!",
-            "💰 What was your first crypto? Mine was BTC at $100 (sold at $150 😭)",
-            "🚀 If CAT hits $1, what will you do first?",
-            "🌟 Who referred you to CaptainCat? Tag them!",
-            "📱 iOS or Android for crypto? Let's settle this!",
-            "🏆 What achievement are you most proud of in crypto?",
-            "🎯 Realistic EOY price prediction? Go!",
-            "🤝 Best crypto community you've been part of? (Besides this one 😉)",
-            "💡 Any suggestions for the project? We're listening!"
-        ]
-        
-        while self.chat_animation['enabled']:
-            try:
-                # Check chat activity
-                time_since_last = datetime.now() - self.chat_animation['last_message_time']
-                
-                # If chat is quiet for 20-40 min, send something
-                if time_since_last.seconds > random.randint(1200, 2400):
-                    # Choose message type
-                    message_type = random.choice(['engagement', 'question', 'motivation'])
-                    
-                    if message_type == 'engagement':
-                        message = random.choice(engagement_messages)
-                    elif message_type == 'question':
-                        message = random.choice(questions)
-                    else:
-                        message = await self.get_motivation_message()
-                    
-                    for channel_id in self.fomo_channels:
-                        if channel_id:
-                            try:
-                                await self.app.bot.send_message(
-                                    channel_id,
-                                    message,
-                                    parse_mode='Markdown'
-                                )
-                                self.chat_animation['last_message_time'] = datetime.now()
-                            except:
-                                pass
-                
-                # Wait before next check
-                await asyncio.sleep(random.randint(300, 600))  # 5-10 min
-                
-            except Exception as e:
-                logger.error(f"Error in chat animator: {e}")
-                await asyncio.sleep(600)
-
-    async def community_engager(self):
-        """Send periodic community building messages"""
-        await asyncio.sleep(900)  # Wait 15 min
-        
-        while True:
-            try:
-                hour = datetime.now().hour
-                
-                # Time-based messages
-                if hour == 9:  # Morning
-                    messages = [
-                        "☀️ **GM CAT FAM!** ☀️\n\nNew day, new opportunities! Let's make it count! 🚀",
-                        "🌅 **Rise and shine CaptainCats!**\n\nWho's ready to conquer the crypto world today? 💪",
-                        "☕ **Morning coffee + Chart checking = Perfect combo!**\n\nHow's everyone feeling? 📈"
-                    ]
-                elif hour == 13:  # Afternoon  
-                    messages = [
-                        "🍔 **Lunch break check-in!**\n\nDon't forget to play a quick game! 🎮",
-                        "⚡ **Afternoon energy boost!**\n\nPresale progress looking amazing! Who's excited? 🔥",
-                        "📊 **Mid-day update!**\n\nWe're growing fast! Welcome all new members! 🎉"
-                    ]
-                elif hour == 18:  # Evening
-                    messages = [
-                        "🌆 **Evening vibes with the best community!**\n\nHow was your day, CAT fam? 💫",
-                        "🍻 **After work = CAT time!**\n\nWho's checking the game leaderboard? 🏆",
-                        "🎯 **Daily reminder:**\n\nYou're early to something special! 🚀"
-                    ]
-                elif hour == 22:  # Night
-                    messages = [
-                        "🌙 **Goodnight from CaptainCat!**\n\nRest well, tomorrow we moon! 🚀",
-                        "⭐ **Night shift crew, where you at?**\n\nChart never sleeps! 📈",
-                        "😴 **Sweet dreams of green candles!**\n\nSee you tomorrow, legends! 💎"
-                    ]
-                else:
-                    messages = None
-                
-                if messages:
-                    message = random.choice(messages)
-                    for channel_id in self.fomo_channels:
-                        if channel_id:
-                            try:
-                                await self.app.bot.send_message(channel_id, message, parse_mode='Markdown')
-                            except:
-                                pass
-                
-                # Wait 3-4 hours
-                await asyncio.sleep(random.randint(10800, 14400))
-                
-            except Exception as e:
-                logger.error(f"Error in community engager: {e}")
-                await asyncio.sleep(3600)
-
-    async def random_fact_sender(self):
-        """Send interesting crypto/cat facts"""
-        await asyncio.sleep(1800)  # Wait 30 min
-        
-        facts = [
-            "🧠 **Did you know?** The first Bitcoin transaction was for pizza! 10,000 BTC for 2 pizzas. Today that's worth $400M+ 🍕",
-            "🐱 **Cat Fact:** Cats spend 70% of their lives sleeping. That's 13-16 hours a day! Just like HODLers checking charts! 😴",
-            "💎 **Crypto Wisdom:** 'Time in the market beats timing the market' - This is why early investors win! ⏰",
-            "🚀 **Fun Fact:** There are over 2.9 million crypto wallets created daily! You're part of the revolution! 🌍",
-            "😸 **Cat Fact:** A group of cats is called a 'clowder'. A group of CAT holders? Legends! 👑",
-            "📈 **History:** Dogecoin was created as a joke in 2013. Now it's worth billions. Never underestimate memes! 🐕",
-            "🧮 **Math Time:** If you bought $100 of BTC in 2010, you'd have $48 million today. Early = Smart! 🤯",
-            "🐾 **Cat Fact:** Cats can jump up to 6 times their length! Just like CAT token will jump! 🦘",
-            "💡 **Did you know?** 'HODL' came from a drunk Bitcoin forum post in 2013. Now it's crypto law! 🍺",
-            "🌟 **Fact:** Over 100 million people own crypto worldwide. We're still early! 🌍"
-        ]
-        
-        tips = [
-            "💡 **Pro Tip:** Always DYOR (Do Your Own Research). Knowledge is power in crypto! 📚",
-            "🛡️ **Security Tip:** Never share your seed phrase. Not even with support! 🔒",
-            "📊 **Trading Tip:** Emotions are your enemy. Have a plan and stick to it! 🎯",
-            "💎 **HODL Tip:** Zoom out on charts when in doubt. Long term vision wins! 🔭",
-            "🎮 **Game Tip:** Play during low traffic hours for better performance! ⚡",
-            "🚀 **Investment Tip:** Only invest what you can afford to lose. Stay safe! 🛡️",
-            "📈 **Chart Tip:** Support and resistance levels are your friends! 📏",
-            "🐱 **CAT Tip:** Engage with the community. We're stronger together! 🤝",
-            "⏰ **Timing Tip:** DCA (Dollar Cost Average) beats trying to time the market! 📅",
-            "🧠 **Mindset Tip:** Think in years, not days. Patience pays! ⏳"
-        ]
-        
-        while True:
-            try:
-                # Send fact or tip
-                if random.choice([True, False]):
-                    message = random.choice(facts)
-                else:
-                    message = random.choice(tips)
-                
-                # Avoid repeating
-                if message != self.chat_animation.get('last_fact'):
-                    self.chat_animation['last_fact'] = message
-                    
-                    for channel_id in self.fomo_channels:
-                        if channel_id:
-                            try:
-                                await self.app.bot.send_message(channel_id, message, parse_mode='Markdown')
-                            except:
-                                pass
-                
-                # Wait 2-3 hours
-                await asyncio.sleep(random.randint(7200, 10800))
-                
-            except Exception as e:
-                logger.error(f"Error in fact sender: {e}")
-                await asyncio.sleep(3600)
-
-    async def get_motivation_message(self) -> str:
-        """Get motivational message"""
-        progress = self.get_presale_progress()
-        
-        motivations = [
-            f"🔥 **LFG CAT FAM!** We're {progress['percentage']:.1f}% to our goal! Every contribution matters! 🚀",
-            f"💪 **Stay strong CaptainCats!** Only {progress['remaining']} TON to go! We got this! 💎",
-            "🌟 **Remember:** The best time to plant a tree was 20 years ago. The second best time is now! 🌳",
-            "🚀 **Greatness awaits those who dare!** You're part of something special! ⭐",
-            "💎 **Diamond hands are forged under pressure!** Stay strong, stay CAT! 💪",
-            f"📈 **Progress update:** {progress['percentage']:.1f}% complete! History in the making! 📚",
-            "🎯 **Focus on the goal:** DEX listing is coming! Then we fly! 🦅",
-            "⚡ **Energy breeds energy!** Keep the momentum going, legends! 🔥",
-            "🌙 **To the moon? No, we're going to build our own galaxy!** 🌌",
-            "👑 **You're not just investors, you're pioneers!** First movers advantage! 🏆"
-        ]
-        
-        return random.choice(motivations)
-
-    # ===== CHAT ANIMATION COMMANDS =====
-    @handle_errors
-    async def chatboost_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Admin command to control chat animation"""
-        user_id = update.effective_user.id
-        chat_id = update.effective_chat.id
-        
-        if not await self.is_admin(user_id, chat_id):
-            await update.message.reply_text("🔒 This command is for admins only.")
-            return
-        
-        if context.args and context.args[0].lower() == 'off':
-            self.chat_animation['enabled'] = False
-            await update.message.reply_text("🔇 Chat animation disabled.")
-        elif context.args and context.args[0].lower() == 'on':
-            self.chat_animation['enabled'] = True
-            await update.message.reply_text("🔊 Chat animation enabled!")
-        else:
-            status = "🟢 ON" if self.chat_animation['enabled'] else "🔴 OFF"
-            await update.message.reply_text(
-                f"💬 **Chat Animation Status:** {status}\n\n"
-                f"Commands:\n"
-                f"/chatboost on - Enable animation\n"
-                f"/chatboost off - Disable animation",
-                parse_mode='Markdown'
-            )
-
-    @handle_errors
-    async def crypto_fact_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Send a random crypto fact"""
-        facts = [
-            "🧠 Satoshi Nakamoto's identity remains unknown, holding ~1 million BTC!",
-            "💰 The total crypto market cap exceeded $3 trillion in 2021!",
-            "🍕 Bitcoin Pizza Day is May 22nd - celebrating the first BTC transaction!",
-            "⚡ There will only ever be 21 million Bitcoin!",
-            "🌍 El Salvador was the first country to adopt Bitcoin as legal tender!",
-            "📱 More people have crypto wallets than bank accounts in some countries!",
-            "🔥 About 20% of all Bitcoin is lost forever in inaccessible wallets!",
-            "🚀 The word 'cryptocurrency' was added to Merriam-Webster in 2018!",
-            "💎 'Satoshi' is the smallest unit of Bitcoin (0.00000001 BTC)!",
-            "🎮 The first NFT was created in 2014, before Ethereum existed!"
-        ]
-        
-        fact = random.choice(facts)
-        await update.message.reply_text(f"💡 **Crypto Fact:**\n\n{fact}", parse_mode='Markdown')
-
-    @handle_errors
-    async def motivate_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Send motivational message"""
-        message = await self.get_motivation_message()
-        
-        keyboard = [[InlineKeyboardButton("💎 I'M MOTIVATED!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
-
-    # ===== ENHANCED TRANSACTION MONITOR =====
-    async def format_transaction_message(self, tx_data: dict) -> str:
-        """Enhanced transaction notification with FOMO"""
-        amount = tx_data['amount']
-        from_addr = tx_data['from_address']
-        tx_hash = tx_data['hash']
-        
-        # Update stats
-        self.fomo_stats['raised'] += amount
-        self.fomo_stats['last_buy_time'] = datetime.now()
-        self.fomo_stats['recent_buyers'].append({
-            'amount': amount,
-            'buyer': from_addr,
-            'time': datetime.now(),
-            'announced': False
-        })
-        
-        # Keep only last 100 transactions
-        if len(self.fomo_stats['recent_buyers']) > 100:
-            self.fomo_stats['recent_buyers'] = self.fomo_stats['recent_buyers'][-100:]
-        
-        progress = self.get_presale_progress()
-        
-        # Shorten address for display
-        short_addr = f"{from_addr[:8]}...{from_addr[-8:]}" if len(from_addr) > 16 else from_addr
-        short_hash = f"{tx_hash[:12]}..." if len(tx_hash) > 12 else tx_hash
-        
-        # Determine message based on amount
-        if amount >= 200:
-            emoji = "🐋🐋🐋"
-            title = "MEGA WHALE PURCHASE"
-            fomo_msg = "🚨 **PRESALE FILLING RAPIDLY!**"
-        elif amount >= 100:
-            emoji = "🐋🐋"
-            title = "WHALE PURCHASE"
-            fomo_msg = "⚡ **Smart money is accumulating!**"
-        elif amount >= 50:
-            emoji = "🦈"
-            title = "SHARK PURCHASE"
-            fomo_msg = "🔥 **Another big investor joined!**"
-        elif amount >= 10:
-            emoji = "🐱"
-            title = "CAT PURCHASE"
-            fomo_msg = "💎 **Community growing strong!**"
-        else:
-            emoji = "🐾"
-            title = "NEW INVESTOR"
-            fomo_msg = "🚀 **Every buy counts!**"
-        
-        tokens_received = amount * PRESALE_CONFIG['token_price']
-        
-        message = f"""
-{emoji} **{title}** {emoji}
-
-💰 **Investment:** {amount:.2f} TON
-💎 **Received:** {tokens_received:,.0f} CAT
-🏠 **Investor:** `{short_addr}`
-🔗 **TX:** `{short_hash}`
-⏰ **Time:** {datetime.now().strftime('%H:%M:%S')}
-
-📊 **PRESALE STATUS:**
-• Progress: {progress['percentage']:.1f}% FILLED!
-• Remaining: Only {progress['remaining']:.0f} TON left!
-• Recent buyers: {len([tx for tx in self.fomo_stats['recent_buyers'] if datetime.now() - tx['time'] < timedelta(hours=1)])} in last hour
-
-{fomo_msg}
-🎯 **Don't miss your chance!**
-
-#CaptainCat #NewInvestor #TON
-        """
-        
-        return message
-
-    # ===== PRESALE STATUS COMMAND =====
-    @handle_errors
-    async def presale_status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Detailed presale status for groups"""
-        progress = self.get_presale_progress()
-        
-        # Calculate various stats
-        total_investors = len(set(tx['buyer'] for tx in self.fomo_stats['recent_buyers']))
-        avg_investment = progress['raised'] / max(total_investors, 1)
-        
-        recent_24h = [tx for tx in self.fomo_stats['recent_buyers'] 
-                     if datetime.now() - tx['time'] < timedelta(hours=24)]
-        volume_24h = sum(tx['amount'] for tx in recent_24h)
-        
-        status_msg = f"""
-📊 **CAPTAINCAT PRESALE DETAILED STATUS** 📊
-
-{self.create_progress_visual(progress['percentage'])}
-
-**💰 FINANCIAL METRICS:**
-• Total Raised: {progress['raised']:.1f}/{progress['target']} TON
-• USD Value: ${progress['raised'] * 5.5:,.0f} (at $5.5/TON)
-• Tokens Sold: {progress['tokens_sold']:,.0f} CAT
-• Avg Investment: {avg_investment:.1f} TON
-
-**📈 MOMENTUM METRICS:**
-• 24h Volume: {volume_24h:.1f} TON
-• 24h Investors: {len(recent_24h)}
-• Hourly Rate: {progress['recent_rate']:.2f} TON/h
-• Completion ETA: {progress['hours_to_complete']:.0f} hours
-
-**👥 COMMUNITY METRICS:**
-• Total Investors: {total_investors}
-• Whale Count (50+ TON): {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 50])}
-• Shark Count (25+ TON): {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 25])}
-
-**⏰ TIME METRICS:**
-• Started: {PRESALE_CONFIG['start_date'].strftime('%d %b %Y')}
-• Ends: {PRESALE_CONFIG['end_date'].strftime('%d %b %Y')}
-• Time Left: {progress['time_left'].days}d {progress['time_left'].seconds//3600}h
-
-**🎯 NEXT TARGETS:**
-• 80% - NFT Collection Preview
-• 90% - Staking Platform Launch
-• 100% - Immediate DEX Listing!
-
-⚡ **Be part of history in the making!**
-        """
-        
-        keyboard = [
-            [InlineKeyboardButton("💎 Invest Now!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
-            [InlineKeyboardButton("📊 Live Updates", callback_data="live_stats"),
-             InlineKeyboardButton("🏆 Milestones", callback_data="milestones")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        # Handle both message and callback query
-        if update.callback_query:
-            await update.callback_query.edit_message_text(status_msg, reply_markup=reply_markup, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(status_msg, reply_markup=reply_markup, parse_mode='Markdown')"Error in transaction monitoring: {e}")
+                logger.error(f"Error in transaction monitoring: {e}")
                 await asyncio.sleep(60)  # Wait longer on error
     
     def stop_monitoring(self):
@@ -2292,6 +1188,205 @@ This is your LAST CHANCE at presale prices!
                                 message, 
                                 reply_markup=InlineKeyboardMarkup(keyboard),
                                 parse_mode='Markdown'
+                            )
+                        except Exception as e:
+                            logger.error(f"Error sending FOMO blast to {channel_id}: {e}")
+                
+            except Exception as e:
+                logger.error(f"Error in hourly FOMO blast: {e}")
+                await asyncio.sleep(60)
+
+    async def momentum_tracker(self):
+        """Track and announce momentum changes"""
+        last_rate = 0
+        
+        while True:
+            try:
+                await asyncio.sleep(1800)  # 30 minutes
+                
+                current_rate = self.calculate_recent_rate()
+                
+                if current_rate > last_rate * 1.5 and current_rate > 1:  # 50% increase in rate
+                    message = f"""
+🚀 **MOMENTUM ALERT** 🚀
+
+📈 **Buying rate EXPLODED!**
+• Previous: {last_rate:.2f} TON/hour
+• Current: {current_rate:.2f} TON/hour
+• Increase: {((current_rate/last_rate - 1) * 100):.0f}%!
+
+🔥 **FOMO is building! Join the wave!**
+                    """
+                    
+                    for channel_id in self.fomo_channels:
+                        if channel_id:
+                            try:
+                                await self.app.bot.send_message(channel_id, message, parse_mode='Markdown')
+                            except:
+                                pass
+                
+                last_rate = current_rate
+                
+            except Exception as e:
+                logger.error(f"Error in momentum tracker: {e}")
+                await asyncio.sleep(60)
+
+    async def whale_watcher(self):
+        """Special alerts for whale purchases"""
+        while True:
+            try:
+                await asyncio.sleep(60)  # Check every minute
+                
+                # Check for new whales in recent buyers
+                for tx in self.fomo_stats['recent_buyers']:
+                    if tx['amount'] >= PRESALE_CONFIG['minimum_whale'] and not tx.get('announced'):
+                        tx['announced'] = True
+                        
+                        # Create whale alert
+                        if tx['amount'] >= 200:
+                            emoji = "🐋🐋🐋"
+                            title = "MEGA WHALE ALERT"
+                        elif tx['amount'] >= 100:
+                            emoji = "🐋🐋"
+                            title = "WHALE ALERT"
+                        else:
+                            emoji = "🐋"
+                            title = "WHALE SPOTTED"
+                        
+                        message = f"""
+{emoji} **{title}** {emoji}
+
+💰 **Amount:** {tx['amount']} TON
+💎 **Got:** {tx['amount'] * PRESALE_CONFIG['token_price']:,.0f} CAT
+🔥 **Worth at 10x:** {tx['amount'] * 10} TON
+🚀 **Worth at 100x:** {tx['amount'] * 100} TON
+
+⚠️ **Smart money is moving!**
+🎯 **Whales know something...**
+
+Don't let them buy it all!
+                        """
+                        
+                        keyboard = [[InlineKeyboardButton("🐋 Join the Whales!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                        
+                        for channel_id in self.fomo_channels:
+                            if channel_id:
+                                try:
+                                    await self.app.bot.send_message(
+                                        channel_id, 
+                                        message,
+                                        reply_markup=InlineKeyboardMarkup(keyboard),
+                                        parse_mode='Markdown'
+                                    )
+                                except:
+                                    pass
+                
+                await asyncio.sleep(3600)  # Check every hour
+                
+            except Exception as e:
+                logger.error(f"Error in countdown timer: {e}")
+                await asyncio.sleep(3600)
+                                        parse_mode='Markdown'
+                                    )
+                                except:
+                                    pass
+                
+            except Exception as e:
+                logger.error(f"Error in whale watcher: {e}")
+                await asyncio.sleep(60)
+
+    async def milestone_announcer(self):
+        """Announce when milestones are reached"""
+        announced_milestones = set()
+        
+        milestones = [25, 50, 60, 70, 75, 80, 85, 90, 95, 98, 99]
+        
+        while True:
+            try:
+                await asyncio.sleep(300)  # Check every 5 minutes
+                
+                progress = self.get_presale_progress()
+                current_percent = progress['percentage']
+                
+                for milestone in milestones:
+                    if current_percent >= milestone and milestone not in announced_milestones:
+                        announced_milestones.add(milestone)
+                        
+                        # Special messages for different milestones
+                        if milestone >= 90:
+                            urgency = "🚨🚨🚨 FINAL HOURS 🚨🚨🚨"
+                            action = "LAST CHANCE - BUY NOW OR CRY LATER!"
+                        elif milestone >= 75:
+                            urgency = "⚡⚡ ALMOST GONE ⚡⚡"
+                            action = "Hurry! Only few spots left!"
+                        else:
+                            urgency = "🎯 MILESTONE REACHED 🎯"
+                            action = "Join before it's too late!"
+                        
+                        message = f"""
+{urgency}
+
+🏆 **PRESALE {milestone}% COMPLETE!** 🏆
+
+📊 **Stats:**
+• Raised: {progress['raised']}/{progress['target']} TON
+• Remaining: Only {progress['remaining']} TON!
+• Investors: {len(set(tx['buyer'] for tx in self.fomo_stats['recent_buyers']))}+
+
+{action}
+
+#CaptainCat #Presale #TON
+                        """
+                        
+                        keyboard = [[InlineKeyboardButton("🚀 GET IN NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                        
+                        for channel_id in self.fomo_channels:
+                            if channel_id:
+                                try:
+                                    await self.app.bot.send_message(
+                                        channel_id,
+                                        message,
+                                        reply_markup=InlineKeyboardMarkup(keyboard),
+                                        parse_mode='Markdown'
+                                    )
+                                except:
+                                    pass
+                
+            except Exception as e:
+                logger.error(f"Error in milestone announcer: {e}")
+                await asyncio.sleep(60)
+
+    async def countdown_timer(self):
+        """Special countdown messages for final days"""
+        while True:
+            try:
+                time_left = PRESALE_CONFIG['end_date'] - datetime.now()
+                days_left = time_left.days
+                
+                # Special messages for final countdown
+                if days_left <= 7 and days_left > 0:
+                    if datetime.now().hour == 12:  # Once per day at noon
+                        
+                        if days_left == 1:
+                            message = "🚨 **24 HOURS LEFT!** 🚨\n\nThis is your FINAL CHANCE!"
+                        elif days_left <= 3:
+                            message = f"⏰ **ONLY {days_left} DAYS LEFT!** ⏰\n\nTime is running out!"
+                        else:
+                            message = f"📅 **{days_left} DAYS REMAINING** 📅\n\nDon't procrastinate!"
+                        
+                        progress = self.get_presale_progress()
+                        message += f"\n\n💎 Still available: {progress['remaining']} TON"
+                        message += f"\n🔥 Current progress: {progress['percentage']:.1f}%"
+                        message += "\n\n⚡ **Every second counts now!**"
+                        
+                        keyboard = [[InlineKeyboardButton("⏰ BUY BEFORE TIME RUNS OUT!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                        
+                        for channel_id in self.fomo_channels:
+                            await self.app.bot.send_message(
+                                channel_id, 
+                                message, 
+                                ),
+                                parse_moreply_markup=InlineKeyboardMarkup(keyboardde='Markdown'
                             )
                         except Exception as e:
                             logger.error(f"Error sending FOMO blast to {channel_id}: {e}")
