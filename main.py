@@ -1549,7 +1549,7 @@ Don't let them buy it all!
                 logger.error(f"Error in milestone announcer: {e}")
                 await asyncio.sleep(60)
 
-    async def countdown_timer(self):
+async def countdown_timer(self):
         """Special countdown messages for final days"""
         while True:
             try:
@@ -1583,10 +1583,10 @@ Don't let them buy it all!
                                         reply_markup=InlineKeyboardMarkup(keyboard),
                                         parse_mode='Markdown'
                                     )
-                                except:
-                                    pass
+                                except Exception as e:
+                                    logger.error(f"Error sending countdown message to {channel_id}: {e}")
                 
-               await asyncio.sleep(3600)  # Check every hour
+                await asyncio.sleep(3600)  # Check every hour
                 
             except Exception as e:
                 logger.error(f"Error in countdown timer: {e}")
