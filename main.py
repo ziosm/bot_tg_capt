@@ -1382,18 +1382,22 @@ Don't let them buy it all!
                         keyboard = [[InlineKeyboardButton("⏰ BUY BEFORE TIME RUNS OUT!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
                         
                         for channel_id in self.fomo_channels:
-                            await self.app.bot.send_message(
-                                channel_id, 
-                                message, 
-                                ),
-                                parse_moreply_markup=InlineKeyboardMarkup(keyboardde='Markdown'
-                            )
-                        except Exception as e:
-                            logger.error(f"Error sending FOMO blast to {channel_id}: {e}")
+                            if channel_id:
+                                try:
+                                    await self.app.bot.send_message(
+                                        channel_id, 
+                                        message, 
+                                        reply_markup=InlineKeyboardMarkup(keyboard),
+                                        parse_mode='Markdown'
+                                    )
+                                except Exception as e:
+                                    logger.error(f"Error sending countdown message to {channel_id}: {e}")
+                
+                await asyncio.sleep(3600)  # Check every hour
                 
             except Exception as e:
-                logger.error(f"Error in hourly FOMO blast: {e}")
-                await asyncio.sleep(60)
+                logger.error(f"Error in countdown timer: {e}")
+                await asyncio.sleep(3600)
 
     async def momentum_tracker(self):
         """Track and announce momentum changes"""
