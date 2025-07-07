@@ -1386,6 +1386,12 @@ Don't let them buy it all!
                 await asyncio.sleep(3600)  # Check every hour
                 
             except Exception as e:
+                # AGGIUNGI QUESTE DUE RIGHE:
+                logger.error(f"Error in countdown timer: {e}")
+                await asyncio.sleep(3600)
+    
+    # ===== CHAT ANIMATION FEATURES =====
+    async def chat_animator(self):
 
     # ===== CHAT ANIMATION FEATURES =====
     async def chat_animator(self):
