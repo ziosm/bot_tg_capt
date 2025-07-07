@@ -1386,13 +1386,9 @@ Don't let them buy it all!
                 await asyncio.sleep(3600)  # Check every hour
                 
             except Exception as e:
-                # AGGIUNGI QUESTE DUE RIGHE:
                 logger.error(f"Error in countdown timer: {e}")
                 await asyncio.sleep(3600)
     
-    # ===== CHAT ANIMATION FEATURES =====
-    async def chat_animator(self):
-
     # ===== CHAT ANIMATION FEATURES =====
     async def chat_animator(self):
         """Animate chat with light engaging messages"""
@@ -1590,6 +1586,7 @@ Don't let them buy it all!
             "👑 **You're not just investors, you're pioneers!** First movers advantage! 🏆"
         ]
         
+        return random.choice(motivations)
 
     # ===== CHAT ANIMATION COMMANDS =====
     @handle_errors
@@ -1780,6 +1777,7 @@ Don't let them buy it all!
         if update.callback_query:
             await update.callback_query.edit_message_text(status_msg, reply_markup=reply_markup, parse_mode='Markdown')
         else:
+            await update.message.reply_text(status_msg, reply_markup=reply_markup, parse_mode='Markdown')
 
     # ===== BASIC COMMANDS FROM ORIGINAL BOT =====
     @handle_errors
@@ -2172,6 +2170,8 @@ Developers specialized in Web3 gaming
 
 💪 **Ready to help the community reach the moon!**
         """
+        
+        await update.message.reply_text(status_msg, parse_mode='Markdown')
 
     # ===== ANTI-SPAM COMMANDS =====
     @handle_errors
