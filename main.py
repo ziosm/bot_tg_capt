@@ -819,7 +819,11 @@ class CaptainCatFOMOBot:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(stats_message, reply_markup=reply_markup, parse_mode='Markdown')
+        # Handle both message and callback query
+        if update.callback_query:
+            await update.callback_query.edit_message_text(stats_message, reply_markup=reply_markup, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(stats_message, reply_markup=reply_markup, parse_mode='Markdown')
 
     @handle_errors
     async def whobought_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -828,7 +832,11 @@ class CaptainCatFOMOBot:
                        key=lambda x: x['time'], reverse=True)[:10]
         
         if not recent:
-            await update.message.reply_text("🚀 Be the FIRST hero to buy CaptainCat!")
+            no_buyers_msg = "🚀 Be the FIRST hero to buy CaptainCat!"
+            if update.callback_query:
+                await update.callback_query.edit_message_text(no_buyers_msg)
+            else:
+                await update.message.reply_text(no_buyers_msg)
             return
         
         message = "🔥 **LATEST CAPTAINCAT INVESTORS** 🔥\n\n"
@@ -869,7 +877,11 @@ class CaptainCatFOMOBot:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        # Handle both message and callback query
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
     @handle_errors
     async def price_prediction_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -923,7 +935,11 @@ class CaptainCatFOMOBot:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        # Handle both message and callback query
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
     @handle_errors  
     async def benefits_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -980,7 +996,11 @@ class CaptainCatFOMOBot:
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        # Handle both message and callback query
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
     @handle_errors
     async def fomo_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1050,7 +1070,11 @@ This is your LAST CHANCE at presale prices!
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        # Handle both message and callback query
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
     @handle_errors
     async def milestone_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1088,7 +1112,11 @@ This is your LAST CHANCE at presale prices!
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        # Handle both message and callback query
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
     # ===== AUTOMATED FOMO MESSAGES =====
     async def start_fomo_scheduler(self):
@@ -1473,7 +1501,11 @@ Don't let them buy it all!
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(status_msg, reply_markup=reply_markup, parse_mode='Markdown')
+        # Handle both message and callback query
+        if update.callback_query:
+            await update.callback_query.edit_message_text(status_msg, reply_markup=reply_markup, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(status_msg, reply_markup=reply_markup, parse_mode='Markdown')
 
     # ===== BASIC COMMANDS FROM ORIGINAL BOT =====
     @handle_errors
