@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
-TON_API_KEY = os.environ.get('TON_API_KEY')
+SOL_API_KEY = os.environ.get('SOL_API_KEY')
 TOKEN_CONTRACT_ADDRESS = os.environ.get('TOKEN_CONTRACT_ADDRESS')
 NOTIFICATION_CHAT_ID = os.environ.get('NOTIFICATION_CHAT_ID')
 
