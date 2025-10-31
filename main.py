@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
-SOL_API_KEY = os.environ.get('SOL_API_KEY')
+TON_API_KEY = os.environ.get('TON_API_KEY')
 TOKEN_CONTRACT_ADDRESS = os.environ.get('TOKEN_CONTRACT_ADDRESS')
 NOTIFICATION_CHAT_ID = os.environ.get('NOTIFICATION_CHAT_ID')
 
@@ -51,7 +51,7 @@ PRESALE_CONFIG = {
 
 FOMO_MESSAGES = {
     'urgency': [
-        "🚨 **URGENT**: Presale {percent}% FULL! Only {remaining} TON spots left!",
+        "🚨 **URGENT**: Presale {percent}% FULL! Only {remaining} SOL spots left!",
         "⏰ **TIME SENSITIVE**: {time_left} until presale closes! Don't miss out!",
         "🔥 **FILLING FAST**: {recent_buyers} buyers in the last hour! Join them!",
         "⚡ **ALERT**: At this rate, presale ends in {estimated_hours}h!"
@@ -293,7 +293,7 @@ class AntiSpamSystem:
 class TONMonitor:
     def __init__(self, bot_instance):
         self.bot = bot_instance
-        self.api_key = TON_API_KEY
+        self.api_key = SOL_API_KEY
         self.contract_address = TOKEN_CONTRACT_ADDRESS
         self.notification_chat = NOTIFICATION_CHAT_ID
         self.last_transaction_lt = None
@@ -305,12 +305,24 @@ class TONMonitor:
             return []
         
         try:
-            url = f"https://toncenter.com/api/v2/getTransactions"
-            params = {
-                'address': self.contract_address,
-                'limit': 10,
-                'api_key': self.api_key
+            # URL del tuo endpoint QuickNode (prendi quello completo dalla dashboard)
+            url = os.environ.get('QUICKNODE_URL', 'https://polished-lively-knowledge.solana-mainnet.quiknode.pro/YOUR_TOKEN/')
+    
+            # Solana usa JSON-RPC invece di REST params
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getSignaturesForAddress",
+                "params": [
+                    self.contract_address,
+                    {"limit": 10}
+                 ]
             }
+    
+            headers = {"Content-Type": "application/json"}
+    
+            # Cambia da GET a POST
+    response = requests.post(url, json=payload, headers=headers)
             
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, params=params) as response:
@@ -337,11 +349,11 @@ class TONMonitor:
             to_address = in_msg.get('destination', '')
             
             # Convert from nanotons to SOL
-            amount_ton = amount / 1_000_000_000
+            amount_sol = amount / 1_000_000_000
             
-            if amount_ton > 0 and to_address == self.contract_address:
+            if amount_sol > 0 and to_address == self.contract_address:
                 return {
-                    'amount': amount_ton,
+                    'amount': amount_sol,
                     'from_address': from_address,
                     'to_address': to_address,
                     'hash': tx.get('transaction_id', {}).get('hash', ''),
@@ -756,7 +768,7 @@ class CaptainCatFOMOBot:
         }
 
     def calculate_recent_rate(self) -> float:
-        """Calculate TON/hour rate from recent transactions"""
+        """Calculate SOL/hour rate from recent transactions"""
         # Get transactions from last 24h
         recent = [tx for tx in self.fomo_stats['recent_buyers'] 
                  if datetime.now() - tx['time'] < timedelta(hours=24)]
@@ -867,15 +879,15 @@ class CaptainCatFOMOBot:
             
             # Format amount
             if tx['amount'] >= 100:
-                amount_str = f"{tx['amount']:.0f} TON"
+                amount_str = f"{tx['amount']:.0f} SOL"
             else:
-                amount_str = f"{tx['amount']:.1f} TON"
+                amount_str = f"{tx['amount']:.1f} SOL"
             
             message += f"{whale} **{amount_str}** - {time_str}\n"
         
         # Add FOMO elements
         total_recent = sum(tx['amount'] for tx in recent)
-        message += f"\n💰 **Total last 10:** {total_recent:.1f} TON"
+        message += f"\n💰 **Total last 10:** {total_recent:.1f} SOL"
         message += f"\n🚀 **That's {total_recent * PRESALE_CONFIG['token_price']:,.0f} CAT tokens!**"
         
         # Add psychological triggers
@@ -1026,7 +1038,7 @@ class CaptainCatFOMOBot:
         # Random FOMO facts
         fomo_facts = [
             f"🔥 {recent_buyers} people bought in the last hour!",
-            f"⚡ Only {progress['remaining']} TON spots left!",
+            f"⚡ Only {progress['remaining']} SOL spots left!",
             f"🚀 {progress['percentage']:.1f}% already sold!",
             f"💎 Last buyer got {random.randint(100000, 150000)} CAT!",
             f"⏰ Presale ends in {progress['time_left'].days} days!",
@@ -1365,7 +1377,7 @@ Don't let them buy it all!
                             message = f"📅 **{days_left} DAYS REMAINING** 📅\n\nDon't procrastinate!"
                         
                         progress = self.get_presale_progress()
-                        message += f"\n\n💎 Still available: {progress['remaining']} TON"
+                        message += f"\n\n💎 Still available: {progress['remaining']} SOL"
                         message += f"\n🔥 Current progress: {progress['percentage']:.1f}%"
                         message += "\n\n⚡ **Every second counts now!**"
                         
@@ -1706,7 +1718,7 @@ Don't let them buy it all!
 
 📊 **PRESALE STATUS:**
 • Progress: {progress['percentage']:.1f}% FILLED!
-• Remaining: Only {progress['remaining']:.0f} TON left!
+• Remaining: Only {progress['remaining']:.0f} SOL left!
 • Recent buyers: {len([tx for tx in self.fomo_stats['recent_buyers'] if datetime.now() - tx['time'] < timedelta(hours=1)])} in last hour
 
 {fomo_msg}
@@ -2154,12 +2166,12 @@ Developers specialized in Web3 gaming
 🔄 **Last update: {datetime.now().strftime('%d/%m/%Y %H:%M')}**
 🗃️ **Database: {db_status}**
 🛡️ **Anti-Spam: ACTIVE**
-💎 **TON Monitor: {ton_status}**
+💎 **SOL Monitor: {sol_status}**
 🔧 **Error Handling: OPTIMIZED**
 
 📊 **PRESALE STATUS:**
 • Progress: {progress['percentage']:.1f}%
-• Raised: {progress['raised']}/{progress['target']} TON
+• Raised: {progress['raised']}/{progress['target']} SOL
 • Recent activity: {len([tx for tx in self.fomo_stats['recent_buyers'] if datetime.now() - tx['time'] < timedelta(hours=1)])} buyers/hour
 
 🔥 **FOMO Features:**
@@ -2210,7 +2222,7 @@ Use /spaminfo @username to check user spam info.
 
     @handle_errors
     async def tonmonitor_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """TON monitoring control command (admin only)"""
+        """SOL monitoring control command (admin only)"""
         user_id = update.effective_user.id
         chat_id = update.effective_chat.id
         
@@ -2220,29 +2232,29 @@ Use /spaminfo @username to check user spam info.
         
         args = context.args
         if args and args[0].lower() == 'start':
-            if not self.ton_monitor.monitoring:
+            if not self.sol_monitor.monitoring:
                 # Start monitoring in background
-                asyncio.create_task(self.ton_monitor.monitor_transactions())
-                await update.message.reply_text("🚀 TON transaction monitoring started!")
+                asyncio.create_task(self.sol_monitor.monitor_transactions())
+                await update.message.reply_text("🚀 SOL transaction monitoring started!")
             else:
-                await update.message.reply_text("⚠️ TON monitoring is already running.")
+                await update.message.reply_text("⚠️ SOL monitoring is already running.")
         elif args and args[0].lower() == 'stop':
-            self.ton_monitor.stop_monitoring()
-            await update.message.reply_text("⏹️ TON transaction monitoring stopped.")
+            self.sol_monitor.stop_monitoring()
+            await update.message.reply_text("⏹️ SOL transaction monitoring stopped.")
         else:
             status = "🟢 Running" if self.ton_monitor.monitoring else "🔴 Stopped"
             monitor_info = f"""
 💎 **TON TRANSACTION MONITOR**
 
 📊 **Status:** {status}
-🏠 **Contract:** `{self.ton_monitor.contract_address or 'Not configured'}`
-📢 **Notification Chat:** `{self.ton_monitor.notification_chat or 'Not configured'}`
-🔑 **API Key:** {'✅ Set' if self.ton_monitor.api_key else '❌ Missing'}
-📈 **Last TX LT:** {self.ton_monitor.last_transaction_lt or 'None'}
+🏠 **Contract:** `{self.sol_monitor.contract_address or 'Not configured'}`
+📢 **Notification Chat:** `{self.sol_monitor.notification_chat or 'Not configured'}`
+🔑 **API Key:** {'✅ Set' if self.sol_monitor.api_key else '❌ Missing'}
+📈 **Last TX LT:** {self.sol_monitor.last_transaction_lt or 'None'}
 
 **Commands:**
-/tonmonitor start - Start monitoring
-/tonmonitor stop - Stop monitoring
+/sonmonitor start - Start monitoring
+/sonmonitor stop - Stop monitoring
             """
             await update.message.reply_text(monitor_info, parse_mode='Markdown')
 
