@@ -290,7 +290,7 @@ class AntiSpamSystem:
             'message_count': len(self.user_messages.get(user_id, []))
         }
 
-class TONMonitor:
+class SOLMonitor:
     def __init__(self, bot_instance):
         self.bot = bot_instance
         self.api_key = SOL_API_KEY
@@ -368,11 +368,11 @@ class TONMonitor:
     async def monitor_transactions(self):
         """Monitor blockchain for new transactions"""
         if not self.api_key or not self.contract_address or not self.notification_chat:
-            logger.warning("TON monitoring disabled - missing configuration")
+            logger.warning("SOL monitoring disabled - missing configuration")
             return
         
         self.monitoring = True
-        logger.info("Starting TON transaction monitoring...")
+        logger.info("Starting SOL transaction monitoring...")
         
         while self.monitoring:
             try:
@@ -401,7 +401,7 @@ class TONMonitor:
                             text=message,
                             parse_mode='Markdown'
                         )
-                        logger.info(f"Transaction notification sent: {tx_data['amount']} TON")
+                        logger.info(f"Transaction notification sent: {tx_data['amount']} SOL")
                         
                         # Log transaction to database
                         await self.bot.db.log_transaction(
@@ -421,7 +421,7 @@ class TONMonitor:
     def stop_monitoring(self):
         """Stop transaction monitoring"""
         self.monitoring = False
-        logger.info("TON transaction monitoring stopped")
+        logger.info("SOL transaction monitoring stopped")
 
 class GameDatabase:
     def __init__(self):
@@ -614,7 +614,7 @@ class CaptainCatFOMOBot:
         self.app = Application.builder().token(token).build()
         self.db = GameDatabase()
         self.anti_spam = AntiSpamSystem()
-        self.ton_monitor = TONMonitor(self)
+        self.sol_monitor = SOLMonitor(self)
         self._web_app_url = os.environ.get('WEBAPP_URL', 'https://captaincat-game.onrender.com')
         
         # FOMO System State
@@ -669,7 +669,7 @@ class CaptainCatFOMOBot:
         
         # Admin handlers
         self.app.add_handler(CommandHandler("antispam", self.antispam_command))
-        self.app.add_handler(CommandHandler("tonmonitor", self.tonmonitor_command))
+        self.app.add_handler(CommandHandler("solmonitor", self.solmonitor_command))
         self.app.add_handler(CommandHandler("spaminfo", self.spaminfo_command))
         
         self.app.add_handler(CallbackQueryHandler(self.button_handler))
@@ -817,14 +817,14 @@ class CaptainCatFOMOBot:
 
 {self.create_progress_visual(progress['percentage'])}
 
-💰 **Raised:** {progress['raised']}/{progress['target']} TON
+💰 **Raised:** {progress['raised']}/{progress['target']} SOL
 📊 **Progress:** {progress['percentage']}%
 ⏰ **Time Left:** {progress['time_left'].days}d {progress['time_left'].seconds//3600}h
 
 📈 **MOMENTUM INDICATORS:**
 • **Last Hour:** {recent_buyers} new investors
-• **24h Rate:** {progress['recent_rate']:.2f} TON/hour
-• **Whales:** {whale_count} joined ({whale_count * PRESALE_CONFIG['minimum_whale']}+ TON)
+• **24h Rate:** {progress['recent_rate']:.2f} SOL/hour
+• **Whales:** {whale_count} joined ({whale_count * PRESALE_CONFIG['minimum_whale']}+ SOL)
 • **Completion ETA:** {progress['hours_to_complete']:.1f} hours
 
 🚨 **CRITICAL LEVELS:**
@@ -1268,10 +1268,10 @@ This is your LAST CHANCE at presale prices!
                         message = f"""
 {emoji} **{title}** {emoji}
 
-💰 **Amount:** {tx['amount']} TON
+💰 **Amount:** {tx['amount']} SOL
 💎 **Got:** {tx['amount'] * PRESALE_CONFIG['token_price']:,.0f} CAT
-🔥 **Worth at 10x:** {tx['amount'] * 10} TON
-🚀 **Worth at 100x:** {tx['amount'] * 100} TON
+🔥 **Worth at 10x:** {tx['amount'] * 10} SOL
+🚀 **Worth at 100x:** {tx['amount'] * 100} SOL
 
 ⚠️ **Smart money is moving!**
 🎯 **Whales know something...**
@@ -1331,13 +1331,13 @@ Don't let them buy it all!
 🏆 **PRESALE {milestone}% COMPLETE!** 🏆
 
 📊 **Stats:**
-• Raised: {progress['raised']}/{progress['target']} TON
-• Remaining: Only {progress['remaining']} TON!
+• Raised: {progress['raised']}/{progress['target']} SOL
+• Remaining: Only {progress['remaining']} SOL!
 • Investors: {len(set(tx['buyer'] for tx in self.fomo_stats['recent_buyers']))}+
 
 {action}
 
-#CaptainCat #Presale #TON
+#CaptainCat #Presale #SOL
                         """
                         
                         keyboard = [[InlineKeyboardButton("🚀 GET IN NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
@@ -1865,7 +1865,7 @@ What do you want to know today?
 
 **⚡ ADMIN COMMANDS:**
 /antispam - Anti-spam system status
-/tonmonitor - TON monitoring controls
+/solmonitor - SOLmonitoring controls
 /spaminfo - Check user spam info
 
 🚀 **Just write and I'll respond!**
@@ -1891,7 +1891,7 @@ Examples: "how much?", "when listing?", "price prediction?"
 💎 **CAPTAINCAT TOKENOMICS**
 
 🔥 **Presale {progress['percentage']:.1f}% FILLED!**
-💰 **Raised: {progress['raised']}/{progress['target']} TON**
+💰 **Raised: {progress['raised']}/{progress['target']} SOL**
 📊 **Total Supply: 1,000,000,000 CAT**
 
 📈 **Distribution:**
@@ -1902,12 +1902,12 @@ Examples: "how much?", "when listing?", "price prediction?"
 • 5% Game Rewards 🎮
 
 💵 **Current Price:**
-• 1 TON = 26,787,781 CAT
+• 1  = 26,787,781 CAT
 • 1 CAT = $0.00000675 SOL
 
 🚀 **Next step: LISTING on major DEXes!**
 
-⚠️ **Only {progress['remaining']} TON spots left!**
+⚠️ **Only {progress['remaining']} SOL spots left!**
         """
         
         keyboard = [
@@ -1930,13 +1930,13 @@ Examples: "how much?", "when listing?", "price prediction?"
 🔥 **LIVE STATUS:**
 {self.create_progress_visual(progress['percentage'])}
 
-💰 **Raised: {progress['raised']}/{progress['target']} TON**
+💰 **Raised: {progress['raised']}/{progress['target']} SOL**
 ⏰ **Time remaining: {progress['time_left'].days} days**
 🚀 **Recent activity: {recent_buyers} buyers last hour!**
 
 🎯 **Presale Bonuses:**
 • Early Bird: +20% tokens
-• Whale Bonus: +15% (>50 TON)
+• Whale Bonus: +15% (>50 SOL)
 • Community Bonus: +10%
 • Game Beta Access: INCLUDED! 🎮
 
@@ -2221,7 +2221,7 @@ Use /spaminfo @username to check user spam info.
         await update.message.reply_text(antispam_info, parse_mode='Markdown')
 
     @handle_errors
-    async def tonmonitor_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def solmonitor_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """SOL monitoring control command (admin only)"""
         user_id = update.effective_user.id
         chat_id = update.effective_chat.id
@@ -2242,9 +2242,9 @@ Use /spaminfo @username to check user spam info.
             self.sol_monitor.stop_monitoring()
             await update.message.reply_text("⏹️ SOL transaction monitoring stopped.")
         else:
-            status = "🟢 Running" if self.ton_monitor.monitoring else "🔴 Stopped"
+            status = "🟢 Running" if self.sol_monitor.monitoring else "🔴 Stopped"
             monitor_info = f"""
-💎 **TON TRANSACTION MONITOR**
+💎 **SOL TRANSACTION MONITOR**
 
 📊 **Status:** {status}
 🏠 **Contract:** `{self.sol_monitor.contract_address or 'Not configured'}`
@@ -2691,13 +2691,13 @@ Be the first hero to:
 • At 50x: 500 SOL
 • At 100x: 1,000 SOL
 
-📊 **50 TON Investment:**
+📊 **50 SOL Investment:**
 • At 2x: 100 SOL
 • At 10x: 500 SOL
 • At 50x: 2,500 SOL
 • At 100x: 5,000 SOL
 
-📊 **100 TON Investment:**
+📊 **100 SOL Investment:**
 • At 2x: 200 SOL
 • At 10x: 1,000 SOL
 • At 50x: 5,000 SOL
@@ -2858,9 +2858,9 @@ Use /predict to see potential returns!"""
             await self.start_fomo_scheduler()
             logger.info("FOMO automation started")
             
-            # Start TON monitoring if configured
-            if self.ton_monitor.api_key and self.ton_monitor.contract_address:
-                asyncio.create_task(self.ton_monitor.monitor_transactions())
+            # Start SOL monitoring if configured
+            if self.sol_monitor.api_key and self.sol_monitor.contract_address:
+                asyncio.create_task(self.sol_monitor.monitor_transactions())
                 logger.info("SOL monitoring started")
         
         try:
