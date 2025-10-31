@@ -39,14 +39,14 @@ SPAM_THRESHOLD = {
 
 # ===== FOMO SYSTEM CONFIGURATION =====
 PRESALE_CONFIG = {
-    'target': 1500,  # TON target
+    'target': 500,  # SOL target
     'start_date': datetime(2024, 12, 1),  # Adjust to your presale start
     'end_date': datetime(2025, 2, 1),    # Adjust to your presale end
     'current_raised': 675,  # Update this dynamically from DB
     'early_bird_bonus': 20,
     'whale_bonus': 15,
     'minimum_whale': 50,
-    'token_price': 10000,  # 1 TON = 10,000 CAT
+    'token_price': 26787781,  # 1 SOL = 26,787,781 CAT
 }
 
 FOMO_MESSAGES = {
@@ -336,7 +336,7 @@ class TONMonitor:
             from_address = in_msg.get('source', '')
             to_address = in_msg.get('destination', '')
             
-            # Convert from nanotons to TON
+            # Convert from nanotons to SOL
             amount_ton = amount / 1_000_000_000
             
             if amount_ton > 0 and to_address == self.contract_address:
@@ -827,7 +827,7 @@ class CaptainCatFOMOBot:
 """
         
         keyboard = [
-            [InlineKeyboardButton("💎 BUY NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("💎 BUY NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📊 Check Progress", callback_data="presale_progress"),
              InlineKeyboardButton("🔥 Recent Buys", callback_data="recent_buyers")]
         ]
@@ -886,7 +886,7 @@ class CaptainCatFOMOBot:
         message += "\n🎯 **Join these legends NOW!**"
         
         keyboard = [
-            [InlineKeyboardButton("🚀 I'M IN!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("🚀 I'M IN!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📊 Live Stats", callback_data="live_stats")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -900,27 +900,27 @@ class CaptainCatFOMOBot:
     @handle_errors
     async def price_prediction_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Show price predictions to create FOMO"""
-        current_price = 1 / PRESALE_CONFIG['token_price']  # Price per CAT in TON
+        current_price = 1 / PRESALE_CONFIG['token_price']  # Price per CAT in SOL
         
         message = f"""
 📈 **CAPTAINCAT PRICE PREDICTION** 📈
 
 **Current Presale Price:**
-• 1 TON = {PRESALE_CONFIG['token_price']:,} CAT
-• 1 CAT = {current_price:.8f} TON
+• 1 SOL = {PRESALE_CONFIG['token_price']:,} CAT
+• 1 CAT = {current_price:.8f} SOL
 
 🎯 **REALISTIC TARGETS (Based on similar projects):**
 
 **🚀 Launch Day (DEX Listing):**
-• Conservative: 2-3x ({current_price * 2:.8f} - {current_price * 3:.8f} TON)
-• Realistic: 5-10x ({current_price * 5:.8f} - {current_price * 10:.8f} TON)
-• Optimistic: 15-20x ({current_price * 15:.8f} - {current_price * 20:.8f} TON)
+• Conservative: 2-3x ({current_price * 2:.8f} - {current_price * 3:.8f} SOL)
+• Realistic: 5-10x ({current_price * 5:.8f} - {current_price * 10:.8f} SOL)
+• Optimistic: 15-20x ({current_price * 15:.8f} - {current_price * 20:.8f} SOL)
 
 **📅 Week 1:**
-• 10-50x potential ({current_price * 10:.8f} - {current_price * 50:.8f} TON)
+• 10-50x potential ({current_price * 10:.8f} - {current_price * 50:.8f} SOL)
 
 **📅 Month 1 (with CEX listings):**
-• 50-100x possible ({current_price * 50:.8f} - {current_price * 100:.8f} TON)
+• 50-100x possible ({current_price * 50:.8f} - {current_price * 100:.8f} SOL)
 
 **🌙 Long Term (6 months):**
 • 100-1000x if we reach top memecoins
@@ -936,15 +936,15 @@ class CaptainCatFOMOBot:
 • Early believers = Biggest winners
 
 🔥 **YOUR POTENTIAL:**
-• Invest 10 TON = Get 100,000 CAT
-• At 10x = Worth 100 TON
-• At 100x = Worth 1,000 TON!
+• Invest 1 SOL = Get 26,787,781 CAT
+• At 10x = Worth 10 SOL
+• At 100x = Worth 100 SOL!
 
 *Not Financial Advice - DYOR*
 """
         
         keyboard = [
-            [InlineKeyboardButton("💎 SECURE MY BAG!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("💎 SECURE MY BAG!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📊 Calculate Returns", callback_data="calculate_returns")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -964,17 +964,17 @@ class CaptainCatFOMOBot:
 **🔥 ONLY FOR PRESALE INVESTORS:**
 
 ✅ **Lowest Price EVER**
-• Presale: 1 TON = 10,000 CAT
-• After: 1 TON = 1,000 CAT (10x higher!)
+• Presale: 1 SOL = 26,787,781 CAT
+• After: 1 SOL = 1,000 CAT (10x higher!)
 
 ✅ **Bonus Tokens**
 • +20% Early Bird Bonus
-• +15% Whale Bonus (>50 TON)
+• +15% Whale Bonus (>5 SOL)
 • +10% Community Bonus
 
 ✅ **NFT Whitelist**
 • Automatic WL for CaptainCat NFTs
-• Free mint for 100+ TON investors
+• Free mint for 100+ SOL investors
 • NFT = Game boosts + Staking multiplier
 
 ✅ **DAO Power**
@@ -1005,7 +1005,7 @@ class CaptainCatFOMOBot:
 """
         
         keyboard = [
-            [InlineKeyboardButton("🎁 CLAIM BENEFITS NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("🎁 CLAIM BENEFITS NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📋 Full Details", callback_data="presale_details")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1030,7 +1030,7 @@ class CaptainCatFOMOBot:
             f"🚀 {progress['percentage']:.1f}% already sold!",
             f"💎 Last buyer got {random.randint(100000, 150000)} CAT!",
             f"⏰ Presale ends in {progress['time_left'].days} days!",
-            f"🐋 Biggest buy today: {max([tx['amount'] for tx in self.fomo_stats['recent_buyers']] or [0])} TON!"
+            f"🐋 Biggest buy today: {max([tx['amount'] for tx in self.fomo_stats['recent_buyers']] or [0])} SOL!"
         ]
         
         message = f"""
@@ -1046,7 +1046,7 @@ class CaptainCatFOMOBot:
 • Stronger community growth
 
 2️⃣ **LIMITED SUPPLY**
-• Only {progress['remaining']} TON spots left
+• Only {progress['remaining']} SOL spots left
 • {progress['percentage']:.1f}% already gone
 • These prices = NEVER AGAIN
 
@@ -1078,7 +1078,7 @@ This is your LAST CHANCE at presale prices!
 """
         
         keyboard = [
-            [InlineKeyboardButton("🚀 FOMO BUY NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("🚀 FOMO BUY NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📊 Check Stats", callback_data="live_stats"),
              InlineKeyboardButton("💰 Recent Buys", callback_data="recent_buyers")]
         ]
@@ -1121,7 +1121,7 @@ This is your LAST CHANCE at presale prices!
         message += "\n\n⚡ **Help us reach next milestone!**"
         
         keyboard = [
-            [InlineKeyboardButton("🚀 Contribute Now!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("🚀 Contribute Now!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📊 Live Progress", callback_data="live_stats")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1182,7 +1182,7 @@ This is your LAST CHANCE at presale prices!
                 for channel_id in self.fomo_channels:
                     if channel_id:
                         try:
-                            keyboard = [[InlineKeyboardButton("💎 BUY NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                            keyboard = [[InlineKeyboardButton("💎 BUY NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
                             await self.app.bot.send_message(
                                 channel_id, 
                                 message, 
@@ -1211,8 +1211,8 @@ This is your LAST CHANCE at presale prices!
 🚀 **MOMENTUM ALERT** 🚀
 
 📈 **Buying rate EXPLODED!**
-• Previous: {last_rate:.2f} TON/hour
-• Current: {current_rate:.2f} TON/hour
+• Previous: {last_rate:.2f} SOL/hour
+• Current: {current_rate:.2f} SOL/hour
 • Increase: {((current_rate/last_rate - 1) * 100):.0f}%!
 
 🔥 **FOMO is building! Join the wave!**
@@ -1267,7 +1267,7 @@ This is your LAST CHANCE at presale prices!
 Don't let them buy it all!
                         """
                         
-                        keyboard = [[InlineKeyboardButton("🐋 Join the Whales!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                        keyboard = [[InlineKeyboardButton("🐋 Join the Whales!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
                         
                         for channel_id in self.fomo_channels:
                             if channel_id:
@@ -1328,7 +1328,7 @@ Don't let them buy it all!
 #CaptainCat #Presale #TON
                         """
                         
-                        keyboard = [[InlineKeyboardButton("🚀 GET IN NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                        keyboard = [[InlineKeyboardButton("🚀 GET IN NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
                         
                         for channel_id in self.fomo_channels:
                             if channel_id:
@@ -1369,7 +1369,7 @@ Don't let them buy it all!
                         message += f"\n🔥 Current progress: {progress['percentage']:.1f}%"
                         message += "\n\n⚡ **Every second counts now!**"
                         
-                        keyboard = [[InlineKeyboardButton("⏰ BUY BEFORE TIME RUNS OUT!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+                        keyboard = [[InlineKeyboardButton("⏰ BUY BEFORE TIME RUNS OUT!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
                         
                         for channel_id in self.fomo_channels:
                             if channel_id:
@@ -1575,7 +1575,7 @@ Don't let them buy it all!
         
         motivations = [
             f"🔥 **LFG CAT FAM!** We're {progress['percentage']:.1f}% to our goal! Every contribution matters! 🚀",
-            f"💪 **Stay strong CaptainCats!** Only {progress['remaining']} TON to go! We got this! 💎",
+            f"💪 **Stay strong CaptainCats!** Only {progress['remaining']} SOL to go! We got this! 💎",
             "🌟 **Remember:** The best time to plant a tree was 20 years ago. The second best time is now! 🌳",
             "🚀 **Greatness awaits those who dare!** You're part of something special! ⭐",
             "💎 **Diamond hands are forged under pressure!** Stay strong, stay CAT! 💪",
@@ -1639,7 +1639,7 @@ Don't let them buy it all!
         """Send motivational message"""
         message = await self.get_motivation_message()
         
-        keyboard = [[InlineKeyboardButton("💎 I'M MOTIVATED!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+        keyboard = [[InlineKeyboardButton("💎 I'M MOTIVATED!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
@@ -1698,7 +1698,7 @@ Don't let them buy it all!
         message = f"""
 {emoji} **{title}** {emoji}
 
-💰 **Investment:** {amount:.2f} TON
+💰 **Investment:** {amount:.2f} SOL
 💎 **Received:** {tokens_received:,.0f} CAT
 🏠 **Investor:** `{short_addr}`
 🔗 **TX:** `{short_hash}`
@@ -1712,7 +1712,7 @@ Don't let them buy it all!
 {fomo_msg}
 🎯 **Don't miss your chance!**
 
-#CaptainCat #NewInvestor #TON
+#CaptainCat #NewInvestor #SOL
         """
         
         return message
@@ -1737,21 +1737,21 @@ Don't let them buy it all!
 {self.create_progress_visual(progress['percentage'])}
 
 **💰 FINANCIAL METRICS:**
-• Total Raised: {progress['raised']:.1f}/{progress['target']} TON
-• USD Value: ${progress['raised'] * 5.5:,.0f} (at $5.5/TON)
+• Total Raised: {progress['raised']:.1f}/{progress['target']} SOL
+• USD Value: ${progress['raised'] * 5.5:,.0f} (at $188.3/SOL)
 • Tokens Sold: {progress['tokens_sold']:,.0f} CAT
-• Avg Investment: {avg_investment:.1f} TON
+• Avg Investment: {avg_investment:.1f} SOL
 
 **📈 MOMENTUM METRICS:**
-• 24h Volume: {volume_24h:.1f} TON
+• 24h Volume: {volume_24h:.1f} SOL
 • 24h Investors: {len(recent_24h)}
-• Hourly Rate: {progress['recent_rate']:.2f} TON/h
+• Hourly Rate: {progress['recent_rate']:.2f} SOL/h
 • Completion ETA: {progress['hours_to_complete']:.0f} hours
 
 **👥 COMMUNITY METRICS:**
 • Total Investors: {total_investors}
-• Whale Count (50+ TON): {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 50])}
-• Shark Count (25+ TON): {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 25])}
+• Whale Count (50+ SOL): {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 50])}
+• Shark Count (25+ SOL): {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 25])}
 
 **⏰ TIME METRICS:**
 • Started: {PRESALE_CONFIG['start_date'].strftime('%d %b %Y')}
@@ -1767,7 +1767,7 @@ Don't let them buy it all!
         """
         
         keyboard = [
-            [InlineKeyboardButton("💎 Invest Now!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("💎 Invest Now!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📊 Live Updates", callback_data="live_stats"),
              InlineKeyboardButton("🏆 Milestones", callback_data="milestones")]
         ]
@@ -1804,7 +1804,7 @@ Hello future hero! I'm CaptainCat AI, the superhero of meme coins!
 Play, collect CAT coins and climb the leaderboard!
 
 🚀 **PRESALE {self.get_presale_progress()['percentage']:.1f}% FILLED!**
-💎 **Target: 1500 TON**
+💎 **Target: 500 SOL**
 🎯 **Community: 10K+ and growing!**
 
 🔥 **FOMO FEATURES:**
@@ -1890,8 +1890,8 @@ Examples: "how much?", "when listing?", "price prediction?"
 • 5% Game Rewards 🎮
 
 💵 **Current Price:**
-• 1 TON = 10,000 CAT
-• 1 CAT = 0.0001 TON
+• 1 TON = 26,787,781 CAT
+• 1 CAT = $0.00000675 SOL
 
 🚀 **Next step: LISTING on major DEXes!**
 
@@ -1899,7 +1899,7 @@ Examples: "how much?", "when listing?", "price prediction?"
         """
         
         keyboard = [
-            [InlineKeyboardButton("💎 Join Presale", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("💎 Join Presale", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📈 Price Predictions", callback_data="predictions")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1940,7 +1940,7 @@ Examples: "how much?", "when listing?", "price prediction?"
         """
         
         keyboard = [
-            [InlineKeyboardButton("🚀 Join Presale NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")],
+            [InlineKeyboardButton("🚀 Join Presale NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")],
             [InlineKeyboardButton("📊 Live Stats", callback_data="live_stats"),
              InlineKeyboardButton("💰 Recent Buys", callback_data="recent_buyers")]
         ]
@@ -1991,13 +1991,13 @@ Examples: "how much?", "when listing?", "price prediction?"
         team_info = f"""
 👥 **CAPTAINCAT TEAM**
 
-🦸‍♂️ **CZ - Founder & CEO**
+🦸‍♂️ **LB - Founder & CEO**
 Crypto visionary with years of DeFi and GameFi experience
 
 💻 **Dr. Eliax - Lead Developer**  
 Expert in smart contracts and blockchain security
 
-📈 **Rejane - Marketing Manager**
+📈 **MIAO - Marketing Manager**
 Specialist in community growth and viral marketing
 
 🎮 **Game Team - CaptainCat Studios**
@@ -2067,9 +2067,9 @@ Developers specialized in Web3 gaming
         
         keyboard = [
             [InlineKeyboardButton("💬 Telegram Main", url="https://t.me/Captain_cat_Cain")],
-            [InlineKeyboardButton("🌐 Website", url="https://captaincat.token")],
+            [InlineKeyboardButton("🌐 Website", url="https://www.captaincat.in/")],
             [InlineKeyboardButton("🎮 Game Community", callback_data="leaderboard")],
-            [InlineKeyboardButton("💎 Buy CAT", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]
+            [InlineKeyboardButton("💎 Buy CAT", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -2673,27 +2673,27 @@ Be the first hero to:
 
 **Your Investment → Potential Returns:**
 
-📊 **10 TON Investment:**
-• At 2x: 20 TON
-• At 10x: 100 TON
-• At 50x: 500 TON
-• At 100x: 1,000 TON
+📊 **10 SOL Investment:**
+• At 2x: 20 SOL
+• At 10x: 100 SOL
+• At 50x: 500 SOL
+• At 100x: 1,000 SOL
 
 📊 **50 TON Investment:**
-• At 2x: 100 TON
-• At 10x: 500 TON
-• At 50x: 2,500 TON
-• At 100x: 5,000 TON
+• At 2x: 100 SOL
+• At 10x: 500 SOL
+• At 50x: 2,500 SOL
+• At 100x: 5,000 SOL
 
 📊 **100 TON Investment:**
-• At 2x: 200 TON
-• At 10x: 1,000 TON
-• At 50x: 5,000 TON
-• At 100x: 10,000 TON
+• At 2x: 200 SOL
+• At 10x: 1,000 SOL
+• At 50x: 5,000 SOL
+• At 100x: 10,000 SOL
 
 🔥 **Remember:** These are based on similar projects that succeeded!
             """
-            keyboard = [[InlineKeyboardButton("💎 INVEST NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+            keyboard = [[InlineKeyboardButton("💎 INVEST NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
             await query.edit_message_text(calc_msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         # Game button handlers
         elif query.data == "game":
@@ -2772,13 +2772,13 @@ Be the first hero to:
         if any(word in message for word in fomo_words):
             responses = [
                 f"🚀 {user_name}! Presale is {self.get_presale_progress()['percentage']:.1f}% filled! Don't miss out!",
-                f"💎 {user_name}, only {self.get_presale_progress()['remaining']} TON spots left! Time is running out!",
+                f"💎 {user_name}, only {self.get_presale_progress()['remaining']} SOL spots left! Time is running out!",
                 f"🔥 {user_name}, smart money is moving! {len([tx for tx in self.fomo_stats['recent_buyers'] if tx['amount'] >= 50])} whales already joined!"
             ]
             response = random.choice(responses)
             response += "\n\n🎯 Use /stats for live updates or /predict for price predictions!"
             
-            keyboard = [[InlineKeyboardButton("💎 BUY NOW!", url="https://t.me/blum/app?startapp=memepadjetton_CAPT_caHzE-ref_AeHwZ0VMTm")]]
+            keyboard = [[InlineKeyboardButton("💎 BUY NOW!", url="https://pump.fun/coin/645KfggWctSTynpqaVCGut4cmR3XQ5bwtiHjpg8Epump")]]
             await update.message.reply_text(response, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         elif any(word in message for word in game_words):
             responses = [
@@ -2813,9 +2813,9 @@ Be the first hero to:
             return random.choice(responses) + "\n\n🎮 Don't forget to try CaptainCat Adventure Game!"
         elif any(word in message for word in price_words):
             return f"""💎 **Current Presale Price:**
-• 1 TON = 10,000 CAT
+• 1 SOL = 26,787,781 CAT
 • Progress: {progress['percentage']:.1f}% filled
-• Remaining: {progress['remaining']} TON
+• Remaining: {progress['remaining']} SOL
 
 🚀 After presale, price will NEVER be this low!
 Use /predict to see potential returns!"""
@@ -2823,7 +2823,7 @@ Use /predict to see potential returns!"""
             responses = [
                 f"Interesting question, {user_name}! While I think about it, did you see we're {progress['percentage']:.1f}% sold?",
                 f"{user_name}, great question! BTW, {len([tx for tx in self.fomo_stats['recent_buyers'] if datetime.now() - tx['time'] < timedelta(hours=1)])} people bought in the last hour!",
-                f"Hello {user_name}! I'll help you! Quick update: only {progress['remaining']} TON spots left in presale!",
+                f"Hello {user_name}! I'll help you! Quick update: only {progress['remaining']} SOL spots left in presale!",
                 f"{user_name}, let me help! Fun fact: last buyer got {self.fomo_stats['recent_buyers'][-1]['amount'] * PRESALE_CONFIG['token_price']:,.0f} CAT tokens!" if self.fomo_stats['recent_buyers'] else f"{user_name}, I'm here to help! Presale is filling fast!"
             ]
             return random.choice(responses) + f"\n\n❓ Try: /stats, /whobought, /predict, /fomo"
@@ -2849,7 +2849,7 @@ Use /predict to see potential returns!"""
             # Start TON monitoring if configured
             if self.ton_monitor.api_key and self.ton_monitor.contract_address:
                 asyncio.create_task(self.ton_monitor.monitor_transactions())
-                logger.info("TON monitoring started")
+                logger.info("SOL monitoring started")
         
         try:
             loop = asyncio.new_event_loop()
