@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
-TON_API_KEY = os.environ.get('TON_API_KEY')
+SON_API_KEY = os.environ.get('SON_API_KEY')
 TOKEN_CONTRACT_ADDRESS = os.environ.get('TOKEN_CONTRACT_ADDRESS')
 NOTIFICATION_CHAT_ID = os.environ.get('NOTIFICATION_CHAT_ID')
 
@@ -2887,7 +2887,7 @@ if __name__ == "__main__":
         print("❌ ERROR: BOT_TOKEN environment variable not found!")
         print("💡 Configure the following environment variables on Render:")
         print("- BOT_TOKEN (required)")
-        print("- TON_API_KEY (for transaction monitoring)")
+        print("- SOL_API_KEY (for transaction monitoring)")
         print("- TOKEN_CONTRACT_ADDRESS (your CAT token contract)")
         print("- NOTIFICATION_CHAT_ID (chat ID for transaction notifications)")
         print("- DATABASE_URL (for persistence)")
