@@ -60,7 +60,7 @@ FOMO_MESSAGES = {
         "🌟 **{total_holders} HOLDERS** already secured their bags! Are you next?",
         "💎 **SMART MONEY MOVING**: {whale_count} whales joined today!",
         "🚀 **COMMUNITY EXPLODING**: {growth_rate}% growth in 24h!",
-        "🏆 **TOP TRENDING** on TON ecosystem! #1 momentum!"
+        "🏆 **TOP TRENDING** on SOL ecosystem! #1 momentum!"
     ],
     'scarcity': [
         "⚠️ **ONLY {tokens_left}M CAT** tokens left in presale allocation!",
@@ -70,7 +70,7 @@ FOMO_MESSAGES = {
     ],
     'price_action': [
         "📈 **PRICE PREDICTION**: 10-50x after DEX listing! (NFA)",
-        "💰 **PRESALE PRICE**: 1 TON = 10,000 CAT | **DEX PRICE**: 1 TON = 1,000 CAT",
+        "💰 **PRESALE PRICE**: 1 SOL = 26,787,781 CAT | **DEX PRICE**: 1 SOL = 26,787,781 CAT",
         "🎯 **SMART INVESTORS** know: Presale = Best entry point!",
         "⚡ **FACT**: Every successful meme started with presale believers!"
     ]
@@ -300,7 +300,7 @@ class TONMonitor:
         self.monitoring = False
         
     async def get_latest_transactions(self) -> List[dict]:
-        """Get latest transactions from TON blockchain"""
+        """Get latest transactions from SOL blockchain"""
         if not self.api_key or not self.contract_address:
             return []
         
@@ -318,7 +318,7 @@ class TONMonitor:
                         data = await response.json()
                         return data.get('result', [])
                     else:
-                        logger.error(f"TON API error: {response.status}")
+                        logger.error(f"SOL API error: {response.status}")
                         return []
         except Exception as e:
             logger.error(f"Error fetching transactions: {e}")
