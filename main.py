@@ -306,7 +306,7 @@ class SOLMonitor:
         
         try:
             # URL del tuo endpoint QuickNode (prendi quello completo dalla dashboard)
-            url = os.environ.get('QUICKNODE_URL', 'https://polished-lively-knowledge.solana-mainnet.quiknode.pro/YOUR_TOKEN/')
+            url = os.environ.get('QUICKNODE_URL', 'https://polished-lively-knowledge.solana-mainnet.quiknode.pro/77c0572ca90d17beba6759585521e1f08a39ef0c')
     
             # Solana usa JSON-RPC invece di REST params
             payload = {
@@ -615,7 +615,7 @@ class CaptainCatFOMOBot:
         self.db = GameDatabase()
         self.anti_spam = AntiSpamSystem()
         self.sol_monitor = SOLMonitor(self)
-        self._web_app_url = os.environ.get('WEBAPP_URL', 'https://captaincat-game.onrender.com')
+        self._web_app_url = os.environ.get('WEBAPP_URL', 'https://gioco-iz17.onrender.com')
         
         # FOMO System State
         self.fomo_stats = {
